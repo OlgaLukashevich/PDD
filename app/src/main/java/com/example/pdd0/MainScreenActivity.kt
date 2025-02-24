@@ -89,6 +89,8 @@ fun MenuButton(text: String, navController: NavController) {
         onClick = {
             if (text == "Случайный билет") {
                 navController.navigate("question_screen")
+            } else if (text == "Все билеты") {
+                navController.navigate("all_questions_screen")  // Переход на экран со всеми билетами
             }
         },
         modifier = Modifier
