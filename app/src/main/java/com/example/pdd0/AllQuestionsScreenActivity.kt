@@ -1,11 +1,14 @@
 package com.example.pdd0
 
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
@@ -52,10 +55,20 @@ fun AllQuestionsScreen(navController: NavController) {
     LaunchedEffect(Unit) {
         try {
             ticketList = parseJson(context) // Загружаем вопросы из JSON
+            Log.d("AllQuestionsScreen", "Загружено ${ticketList.size} вопросов.") // Логируем размер списка
         } catch (e: Exception) {
             Toast.makeText(context, "Ошибка загрузки данных", Toast.LENGTH_SHORT).show()
         }
     }
+
+    // Группируем вопросы по номерам билетов, чтобы отобразить только уникальные билеты
+    val uniqueTickets = ticketList
+        .groupBy { it.ticket_number }  // Группируем по номеру билета
+        .keys.toList()  // Получаем только уникальные номера билетов
+        .sortedBy { it.substringAfter("Билет ").toIntOrNull() ?: Int.MAX_VALUE } // Сортировка по числовому значению
+
+
+
 
     Column(
         modifier = Modifier
@@ -81,40 +94,41 @@ fun AllQuestionsScreen(navController: NavController) {
         Spacer(modifier = Modifier.height(32.dp))
 
         // Список билетов
-        TicketList(ticketList, navController)
+        TicketList(uniqueTickets, navController)
     }
 }
 
 @Composable
-fun TicketList(ticketList: List<Question>, navController: NavController) {
-    if (ticketList.isEmpty()) {
+fun TicketList(ticketNumbers: List<String>, navController: NavController) {
+    if (ticketNumbers.isEmpty()) {
         Text(text = "Загружаются билеты...", fontSize = 18.sp)
         return
     }
 
-    Column {
-        // Отображаем каждый билет из списка
-        ticketList.forEach { question ->
-            TicketItem(question, navController)
+    LazyColumn(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        items(ticketNumbers) { ticketNumber ->
+            TicketItem(ticketNumber, navController)
         }
     }
 }
 
 @Composable
-fun TicketItem(question: Question, navController: NavController) {
+fun TicketItem(ticketNumber: String, navController: NavController) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
             .clickable {
                 // При клике на билет, переходим на экран с вопросами
-                navController.navigate("question_screen/${question.ticket_number}")
+                navController.navigate("question_screen/$ticketNumber")
             },
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Название билета
         Text(
-            text = "Билет ${question.ticket_number}: ${question.title}",
+            text = "$ticketNumber",
             fontSize = 18.sp,
             modifier = Modifier.weight(1f)
         )
@@ -128,6 +142,7 @@ fun TicketItem(question: Question, navController: NavController) {
     }
 }
 
+
 @Composable
 fun QuestionScreen(ticketId: String) {
     val currentQuestionIndex = 1
@@ -140,7 +155,7 @@ fun QuestionScreen(ticketId: String) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Билет $ticketId",
+            text = "$ticketId",
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold
         )
