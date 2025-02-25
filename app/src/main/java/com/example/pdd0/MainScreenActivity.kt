@@ -27,7 +27,8 @@ class MainScreenActivity : ComponentActivity() {
             val navController = rememberNavController()
             NavHost(navController = navController, startDestination = "main_screen") {
                 composable("main_screen") { MainScreen(navController) }
-                composable("question_screen") { QuestionScreen() }
+                composable("question_screen") { QuestionScreenActivity() }
+                        composable("all_questions_screen") { AllQuestionsScreenActivity() }
             }
         }
     }
