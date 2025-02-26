@@ -11,11 +11,14 @@ fun parseJson(context: Context): List<Question> {
     val gson = Gson()
 
     // Папка с билетами внутри assets
-    val folderPath = "pdd_res/questions/A_B/tickets"
+    val folderPathQuestion = "pdd_res/questions/A_B/tickets"
+    val folderPathMarkup = "pdd_res/questions/markup"
+    val folderPathSign = "pdd_res/questions/signs"
+    val folderPathImg = "pdd_res/questions/images/A_B"
 
     try {
         // Получаем список всех файлов в папке
-        val files = context.assets.list(folderPath)
+        val files = context.assets.list(folderPathQuestion)
 
         // Проверяем, что файлы были найдены
         if (files != null) {
@@ -29,7 +32,7 @@ fun parseJson(context: Context): List<Question> {
 
             // Обрабатываем каждый файл
             for (fileName in files) {
-                val filePath = "$folderPath/$fileName"
+                val filePath = "$folderPathQuestion/$fileName"
                 try {
                     val jsonContent = context.assets.open(filePath).bufferedReader().use { it.readText() }
 

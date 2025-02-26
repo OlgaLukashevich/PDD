@@ -17,3 +17,10 @@ data class Answer(
     val answer_text: String,
     val is_correct: Boolean
 )
+
+
+data class QuestionState(
+    val selectedAnswer: String?,
+    val isAnswerCorrect: Boolean,
+    val isAnswerLocked: Boolean
+)

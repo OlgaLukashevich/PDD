@@ -26,7 +26,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.pdd0.parser.parseJson
 
-
 class QuestionScreenActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,9 +46,11 @@ class QuestionScreenActivity : ComponentActivity() {
 
 @Composable
 fun QuestionScreen(navController: NavController) {
-    var currentQuestionIndex by remember { mutableStateOf(0) } // Начальный индекс вопроса
+    var currentQuestionIndex by remember { mutableStateOf(0) } // Индекс текущего вопроса
     var selectedAnswer by remember { mutableStateOf<String?>(null) } // Хранение выбранного ответа
-    var isAnswerCorrect by remember { mutableStateOf(false) } // Проверка, правильный ли ответ
+    var isAnswerCorrect by remember { mutableStateOf(false) } // Проверка правильности ответа
+    var questionStates by remember { mutableStateOf(mutableMapOf<Int, QuestionState>()) } // Состояние всех вопросов
+    var isTestFinished by remember { mutableStateOf(false) } // Флаг завершения теста
     val questionList = parseJson(context = LocalContext.current) // Загрузка вопросов
 
     // Переход от индекса к конкретному вопросу
@@ -60,8 +61,28 @@ fun QuestionScreen(navController: NavController) {
         Text(text = "Ошибка загрузки вопроса", fontSize = 24.sp)
         return
     }
-    var showPauseDialog by remember { mutableStateOf(false) }
 
+    // Загружаем состояние для текущего вопроса (если оно есть)
+    val currentState = questionStates[currentQuestionIndex]
+    selectedAnswer = currentState?.selectedAnswer
+    isAnswerCorrect = currentState?.isAnswerCorrect ?: false
+    val isAnswerLocked = currentState?.isAnswerLocked ?: false
+
+    // Подсчет правильных ответов
+    val correctAnswersCount = questionStates.values.count { it.isAnswerCorrect }
+
+    // Проверяем, завершил ли пользователь все вопросы
+    if (isTestFinished) {
+        // Показываем результат, когда тест завершен
+        ResultScreen(correctAnswersCount = correctAnswersCount, totalQuestions = questionList.size)
+        return
+    }
+
+    // Проверяем, если все вопросы отвечены, то показываем результат
+    if (currentQuestionIndex == 10) { //== questionList.size
+        // Завершаем тест
+        isTestFinished = true
+    }
 
     Column(
         modifier = Modifier
@@ -99,8 +120,12 @@ fun QuestionScreen(navController: NavController) {
                 isCorrect = answer.is_correct,
                 isSelected = answer.answer_text == selectedAnswer,
                 onClick = {
-                    selectedAnswer = answer.answer_text
-                    isAnswerCorrect = answer.is_correct
+                    if (!isAnswerLocked) {
+                        selectedAnswer = answer.answer_text
+                        isAnswerCorrect = answer.is_correct
+                        // Сохраняем ответ и блокируем возможность изменения
+                        questionStates[currentQuestionIndex] = QuestionState(selectedAnswer, isAnswerCorrect, true)
+                    }
                 },
                 isAnswerCorrect = isAnswerCorrect
             )
@@ -116,8 +141,8 @@ fun QuestionScreen(navController: NavController) {
             IconButton(onClick = {
                 if (currentQuestionIndex > 0) {
                     currentQuestionIndex -= 1
-                    selectedAnswer = null // Сбросить выбранный ответ
-                    isAnswerCorrect = false // Сбросить статус ответа
+                    selectedAnswer = questionStates[currentQuestionIndex]?.selectedAnswer
+                    isAnswerCorrect = questionStates[currentQuestionIndex]?.isAnswerCorrect ?: false
                 }
             }) {
                 Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Previous")
@@ -125,17 +150,73 @@ fun QuestionScreen(navController: NavController) {
             IconButton(onClick = {
                 if (currentQuestionIndex < questionList.size - 1) {
                     currentQuestionIndex += 1
-                    selectedAnswer = null // Сбросить выбранный ответ
-                    isAnswerCorrect = false // Сбросить статус ответа
+                    selectedAnswer = questionStates[currentQuestionIndex]?.selectedAnswer
+                    isAnswerCorrect = questionStates[currentQuestionIndex]?.isAnswerCorrect ?: false
+                }
+                else {
+                    // Завершаем тест после последнего вопроса
+                    isTestFinished = true
                 }
             }) {
                 Icon(imageVector = Icons.Filled.ArrowForward, contentDescription = "Next")
             }
-
         }
     }
-
 }
+
+@Composable
+fun ResultScreen(correctAnswersCount: Int, totalQuestions: Int) {
+    val resultText = "$correctAnswersCount/10"
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Тест завершен!",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "Ваш результат: $resultText",
+            fontSize = 32.sp,
+            fontWeight = FontWeight.Bold,
+            color = if (correctAnswersCount == 10) Color.Green else Color.Red //== totalQuestions
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Button(onClick = {
+            // Логика для повторного прохождения теста или перехода к следующему билету
+        }) {
+            Text("Пройти заново")
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        // Кнопка добавить в избранное
+        Button(onClick = {}) {
+            Text("Добавить в избранное")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Кнопка следующий билет
+        Button(onClick = { }) {
+            Text("Следующий билет")
+        }
+    }
+}
+
+data class QuestionState(
+    val selectedAnswer: String?,
+    val isAnswerCorrect: Boolean,
+    val isAnswerLocked: Boolean
+)
+
 
 
 
@@ -164,7 +245,7 @@ fun QuestionNavigationPanel(navController: NavController, currentQuestionIndex: 
                 color = if (index == currentQuestionIndex + 1) Color.Black else Color.Gray
             )
         }
-        }
+    }
 
     // Диалог с вариантами действий
     if (showPauseDialog) {
