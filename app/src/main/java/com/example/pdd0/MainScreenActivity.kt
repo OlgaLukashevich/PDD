@@ -27,7 +27,11 @@ class MainScreenActivity : ComponentActivity() {
             val navController = rememberNavController()
             NavHost(navController = navController, startDestination = "main_screen") {
                 composable("main_screen") { MainScreen(navController) }
-                composable("question_screen") { QuestionScreen() }
+//                composable("question_screen") { QuestionScreen(navController) }
+                composable("question_screen") { QuestionScreen(navController = navController) }  // Новый экран
+
+                composable("favorite_question_screen") { FavoriteQuestionScreen(navController = navController) }  // Новый экран
+
                 composable("all_questions_screen") {
                     AllQuestionsScreen(navController = navController)
                 }
@@ -88,14 +92,34 @@ fun MenuButtons(navController: NavController) {
     }
 }
 
+//@Composable
+//fun MenuButton(text: String, navController: NavController) {
+//    Button(
+//        onClick = {
+//            if (text == "Случайный билет") {
+//                navController.navigate("question_screen")
+//            } else if (text == "Все билеты") {
+//                navController.navigate("all_questions_screen")  // Переход на экран со всеми билетами
+//            }
+//        },
+//        modifier = Modifier
+//            .fillMaxWidth()
+//            .height(48.dp),
+//        shape = RoundedCornerShape(8.dp)
+//    ) {
+//        Text(text = text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+//    }
+//}
+
 @Composable
 fun MenuButton(text: String, navController: NavController) {
     Button(
         onClick = {
-            if (text == "Случайный билет") {
-                navController.navigate("question_screen")
-            } else if (text == "Все билеты") {
-                navController.navigate("all_questions_screen")  // Переход на экран со всеми билетами
+            when (text) {
+                "Случайный билет" -> navController.navigate("question_screen")
+                "Все билеты" -> navController.navigate("all_questions_screen")
+                "Избранные билеты" -> navController.navigate("favorite_question_screen") // Переход на избранные билеты
+                "Экзамен" -> navController.navigate("exam_screen") // Пример с экраном экзамена
             }
         },
         modifier = Modifier
@@ -106,6 +130,7 @@ fun MenuButton(text: String, navController: NavController) {
         Text(text = text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
     }
 }
+
 
 @Composable
 fun SearchBar() {

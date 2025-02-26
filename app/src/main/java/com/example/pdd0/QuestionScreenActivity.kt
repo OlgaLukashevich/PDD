@@ -16,9 +16,14 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.example.pdd0.parser.parseJson
 
 
@@ -26,13 +31,22 @@ class QuestionScreenActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            QuestionScreen()
+            // Навигация
+            val navController = rememberNavController()
+            NavHost(navController = navController, startDestination = "main_screen") {
+                composable("main_screen") { MainScreen(navController) }
+                composable("question_screen") { QuestionScreen(navController) }
+                composable("all_questions_screen") {
+                    AllQuestionsScreen(navController = navController)
+                }
+            }
         }
     }
 }
 
+
 @Composable
-fun QuestionScreen() {
+fun QuestionScreen(navController: NavController) {
     var currentQuestionIndex by remember { mutableStateOf(0) } // Начальный индекс вопроса
     var selectedAnswer by remember { mutableStateOf<String?>(null) } // Хранение выбранного ответа
     var isAnswerCorrect by remember { mutableStateOf(false) } // Проверка, правильный ли ответ
@@ -46,6 +60,8 @@ fun QuestionScreen() {
         Text(text = "Ошибка загрузки вопроса", fontSize = 24.sp)
         return
     }
+    var showPauseDialog by remember { mutableStateOf(false) }
+
 
     Column(
         modifier = Modifier
@@ -54,7 +70,7 @@ fun QuestionScreen() {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Панель навигации
-        QuestionNavigationPanel(currentQuestionIndex)
+        QuestionNavigationPanel(navController, currentQuestionIndex)
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -115,19 +131,27 @@ fun QuestionScreen() {
             }) {
                 Icon(imageVector = Icons.Filled.ArrowForward, contentDescription = "Next")
             }
+
         }
     }
+
 }
 
+
+
+
+
 @Composable
-fun QuestionNavigationPanel(currentQuestionIndex: Int) {
+fun QuestionNavigationPanel(navController: NavController, currentQuestionIndex: Int) {
+    var showPauseDialog by remember { mutableStateOf(false) }
     Row(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(onClick = { /* Handle pause/play */ }) {
-            Icon(imageVector = Icons.Filled.PlayArrow, contentDescription = "Play/Pause")
+        // Кнопка паузы
+        IconButton(onClick = { showPauseDialog = true }) {
+            Icon(imageVector = Icons.Filled.Pause, contentDescription = "Pause")
         }
         // Навигация по вопросам
         (1..10).forEach { index ->  // Можно заменить диапазон, чтобы он был от 1 до количества вопросов
@@ -140,7 +164,62 @@ fun QuestionNavigationPanel(currentQuestionIndex: Int) {
                 color = if (index == currentQuestionIndex + 1) Color.Black else Color.Gray
             )
         }
+        }
+
+    // Диалог с вариантами действий
+    if (showPauseDialog) {
+
+        PauseDialog(
+            navController = navController, // Передаем navController
+            onResume = {
+                showPauseDialog = false
+            },
+            onGoHome = {
+                showPauseDialog = false
+                navController.navigate("main_screen") // Переход на главный экран
+            },
+            onAddToFavorites = {
+                // Логика для добавления в избранное
+                showPauseDialog = false
+            }
+        )
     }
+}
+
+
+@Composable
+fun PauseDialog(
+    navController: NavController, // Добавляем NavController
+    onResume: () -> Unit,
+    onGoHome: () -> Unit,
+    onAddToFavorites: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = {},
+        title = {
+            Text(text = "Пауза")
+        },
+        text = {
+            Column {
+                TextButton(onClick = onResume) {
+                    Text("Продолжить")
+                }
+                TextButton(onClick = {
+                    navController.navigate("main_screen") // Переход на главный экран
+                }) {
+                    Text("На главную")
+                }
+                TextButton(onClick = onAddToFavorites) {
+                    Text("Добавить в избранное")
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onResume) {
+                Text("Закрыть")
+            }
+        }
+    )
 }
 
 @Composable
