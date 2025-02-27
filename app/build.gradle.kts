@@ -52,6 +52,12 @@ android {
 dependencies {
 
 
+
+    implementation ("com.github.bumptech.glide:glide:4.15.1")
+    annotationProcessor ("com.github.bumptech.glide:compiler:4.15.1")
+    implementation("io.coil-kt:coil-compose:2.1.0")  // Для использования Coil в Jetpack Compose
+
+
     implementation ("com.google.code.gson:gson:2.8.8")
     //    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0")
 

@@ -2,7 +2,7 @@ package com.example.pdd0.parser
 
 import android.content.Context
 import android.util.Log
-import com.example.pdd0.dataClass.Question
+import com.example.pdd0.dataClass.*
 import com.google.gson.Gson
 import java.io.FileNotFoundException
 
@@ -10,28 +10,18 @@ fun parseJson(context: Context): List<Question> {
     val questionList = mutableListOf<Question>()
     val gson = Gson()
 
-    // Папка с билетами внутри assets
+    // Папка с вопросами и изображениями
     val folderPathQuestion = "pdd_res/questions/A_B/tickets"
-    val folderPathMarkup = "pdd_res/questions/markup"
-    val folderPathSign = "pdd_res/questions/signs"
-    val folderPathImg = "pdd_res/questions/images/A_B"
+    val folderPathImg = "pdd_res/images/A_B"
+    val folderPathMarkup = "pdd_res/markup"
+    val folderPathSign = "pdd_res/signs"
+
 
     try {
-        // Получаем список всех файлов в папке
-        val files = context.assets.list(folderPathQuestion)
-
-        // Проверяем, что файлы были найдены
-        if (files != null) {
-            val totalFiles = files.size
-//            Log.d("ParseJson", "Найдено файлов в папке: $totalFiles")
-
-            // Если файлов меньше 40, это может быть проблемой
-            if (totalFiles != 40) {
-                Log.w("ParseJson", "Ожидалось 40 файлов, но найдено $totalFiles.")
-            }
-
-            // Обрабатываем каждый файл
-            for (fileName in files) {
+        // Получаем список всех файлов с вопросами
+        val questionFiles = context.assets.list(folderPathQuestion)
+        if (questionFiles != null) {
+            for (fileName in questionFiles) {
                 val filePath = "$folderPathQuestion/$fileName"
                 try {
                     val jsonContent = context.assets.open(filePath).bufferedReader().use { it.readText() }
@@ -39,26 +29,29 @@ fun parseJson(context: Context): List<Question> {
                     // Преобразуем JSON строку в List<Question>
                     val questionsFromFile = gson.fromJson(jsonContent, Array<Question>::class.java).toList()
 
-                    // Добавляем вопросы в общий список
-                    questionList.addAll(questionsFromFile)
+                    // Обрабатываем каждый вопрос
+                    for (question in questionsFromFile) {
+                        val image = "$folderPathImg/${question.image}"
 
-                    // Логируем, сколько вопросов из каждого файла
-//                    Log.d("ParseJson", "Файл: $fileName - найдено вопросов: ${questionsFromFile.size}")
+                        // Создаём новый вопрос с привязанным изображением
+                        val modifiedQuestion = question.copy(
+                            image = image
+                        )
+
+                        questionList.add(modifiedQuestion)
+                    }
+
                 } catch (e: Exception) {
-                    Log.e("ParseJson", "Ошибка при обработке файла: $fileName", e)
+                    Log.e("ParseJson", "Ошибка при обработке файла вопросов: $fileName", e)
                 }
             }
-        } else {
-            Log.e("ParseJson", "Файлы в папке не найдены.")
         }
+
     } catch (e: FileNotFoundException) {
-        Log.e("ParseJson", "Папка не найдена.", e)
+        Log.e("ParseJson", "Ошибка при поиске файлов.", e)
     } catch (e: Exception) {
         Log.e("ParseJson", "Ошибка при парсинге JSON", e)
     }
-
-//    // Логируем общее количество вопросов
-//    Log.d("ParseJson", "Общее количество вопросов: ${questionList.size}")
 
     return questionList
 }

@@ -81,7 +81,10 @@ fun AllQuestionsScreen(navController: NavController) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = { /* Handle back button */ }) {
+            IconButton(onClick = {
+                // Переход на главный экран
+                navController.popBackStack("main_screen", inclusive = false)  // Мы возвращаемся на главный экран
+            }) {
                 Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Back")
             }
             Text(

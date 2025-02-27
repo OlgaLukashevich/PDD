@@ -3,6 +3,7 @@ package com.example.pdd0
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,11 +20,15 @@ import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.zIndex
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import coil.compose.rememberImagePainter
+import coil.request.ImageRequest
 import com.example.pdd0.parser.parseJson
 
 class QuestionScreenActivity : ComponentActivity() {
@@ -34,7 +39,11 @@ class QuestionScreenActivity : ComponentActivity() {
             val navController = rememberNavController()
             NavHost(navController = navController, startDestination = "main_screen") {
                 composable("main_screen") { MainScreen(navController) }
-                composable("question_screen") { QuestionScreen(navController) }
+                composable("question_screen/{questionIndex}") { backStackEntry ->
+                    // Извлекаем индекс вопроса из аргументов
+                    val questionIndex = backStackEntry.arguments?.getString("questionIndex")?.toIntOrNull() ?: 1
+                    QuestionScreen(navController = navController, questionIndex = questionIndex - 1) // Индекс начинается с 0
+                }
                 composable("all_questions_screen") {
                     AllQuestionsScreen(navController = navController)
                 }
@@ -44,9 +53,10 @@ class QuestionScreenActivity : ComponentActivity() {
 }
 
 
+
 @Composable
-fun QuestionScreen(navController: NavController) {
-    var currentQuestionIndex by remember { mutableStateOf(0) } // Индекс текущего вопроса
+fun QuestionScreen(navController: NavController, questionIndex: Int) {
+    var currentQuestionIndex by remember { mutableStateOf(questionIndex) } // Начинаем с переданного индекса
     var selectedAnswer by remember { mutableStateOf<String?>(null) } // Хранение выбранного ответа
     var isAnswerCorrect by remember { mutableStateOf(false) } // Проверка правильности ответа
     var questionStates by remember { mutableStateOf(mutableMapOf<Int, QuestionState>()) } // Состояние всех вопросов
@@ -72,11 +82,12 @@ fun QuestionScreen(navController: NavController) {
     val correctAnswersCount = questionStates.values.count { it.isAnswerCorrect }
 
     // Проверяем, завершил ли пользователь все вопросы
-    if (isTestFinished) {
+       if (isTestFinished) {
         // Показываем результат, когда тест завершен
-        ResultScreen(correctAnswersCount = correctAnswersCount, totalQuestions = questionList.size)
+        ResultScreen(correctAnswersCount = correctAnswersCount, totalQuestions = questionList.size, navController = navController)
         return
     }
+
 
     // Проверяем, если все вопросы отвечены, то показываем результат
     if (currentQuestionIndex == 10) { //== questionList.size
@@ -90,29 +101,50 @@ fun QuestionScreen(navController: NavController) {
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Панель навигации
-        QuestionNavigationPanel(navController, currentQuestionIndex)
-
-        Spacer(modifier = Modifier.height(16.dp))
-
         // Заголовок с номером билета
         Text(
             text = "${currentQuestion.ticket_number}",
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold
         )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Вопрос
-        Text(
-            text = currentQuestion.question,
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold
-        )
-
         Spacer(modifier = Modifier.height(16.dp))
+        // Панель навигации
+        QuestionNavigationPanel(navController, currentQuestionIndex)
+        Spacer(modifier = Modifier.height(22.dp))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(230.dp) // Ограничиваем высоту Box
+        ) {
+           // Вопрос
+            Text(
+                text = currentQuestion.question,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold
+            )
 
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Выводим изображение вопроса
+            if (currentQuestion.image.isNotEmpty()) {
+                val imagePainter = rememberImagePainter(
+                    data = ImageRequest.Builder(LocalContext.current)
+                        .data("file:///android_asset/${currentQuestion.image}")
+                        .build()
+                )
+                Image(
+                    painter = imagePainter,
+                    contentDescription = "Image for question",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .padding(16.dp),
+                    contentScale = ContentScale.Crop
+                )
+
+            }
+
+        }
         // Ответы
         currentQuestion.answers.forEach { answer ->
             AnswerButton(
@@ -133,20 +165,27 @@ fun QuestionScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Навигационные кнопки
         Row(
             horizontalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)  // Добавляем отступы
+                .align(Alignment.CenterHorizontally)  // Центрируем кнопки
+                .zIndex(1f)  // Устанавливаем приоритет отображения
         ) {
+            // Кнопка "Назад"
             IconButton(onClick = {
                 if (currentQuestionIndex > 0) {
                     currentQuestionIndex -= 1
                     selectedAnswer = questionStates[currentQuestionIndex]?.selectedAnswer
                     isAnswerCorrect = questionStates[currentQuestionIndex]?.isAnswerCorrect ?: false
                 }
-            }) {
+            },
+                modifier = Modifier.size(48.dp)  // Увеличиваем размер кнопок
+            ) {
                 Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Previous")
             }
+            // Кнопка "Вперед"
             IconButton(onClick = {
                 if (currentQuestionIndex < questionList.size - 1) {
                     currentQuestionIndex += 1
@@ -157,7 +196,9 @@ fun QuestionScreen(navController: NavController) {
                     // Завершаем тест после последнего вопроса
                     isTestFinished = true
                 }
-            }) {
+            },
+                modifier = Modifier.size(48.dp)  // Увеличиваем размер кнопок
+            ) {
                 Icon(imageVector = Icons.Filled.ArrowForward, contentDescription = "Next")
             }
         }
@@ -165,7 +206,7 @@ fun QuestionScreen(navController: NavController) {
 }
 
 @Composable
-fun ResultScreen(correctAnswersCount: Int, totalQuestions: Int) {
+fun ResultScreen(correctAnswersCount: Int, totalQuestions: Int, navController: NavController) {
     val resultText = "$correctAnswersCount/10"
 
     Column(
@@ -198,17 +239,23 @@ fun ResultScreen(correctAnswersCount: Int, totalQuestions: Int) {
         }
         Spacer(modifier = Modifier.height(16.dp))
         // Кнопка добавить в избранное
-        Button(onClick = {}) {
+        Button(onClick = {navController.navigate("favorite_question_screen")}) {
             Text("Добавить в избранное")
         }
-
         Spacer(modifier = Modifier.height(16.dp))
-
         // Кнопка следующий билет
         Button(onClick = { }) {
             Text("Следующий билет")
         }
+        Spacer(modifier = Modifier.height(16.dp))
+        // Кнопка вернуться на главную
+        Button(onClick = {
+            navController.navigate("main_screen") }) {
+            Text("Главная")
+        }
     }
+
+
 }
 
 data class QuestionState(
@@ -216,11 +263,6 @@ data class QuestionState(
     val isAnswerCorrect: Boolean,
     val isAnswerLocked: Boolean
 )
-
-
-
-
-
 
 @Composable
 fun QuestionNavigationPanel(navController: NavController, currentQuestionIndex: Int) {
@@ -241,7 +283,8 @@ fun QuestionNavigationPanel(navController: NavController, currentQuestionIndex: 
                 fontSize = 18.sp,
                 modifier = Modifier
                     .padding(4.dp)
-                    .clickable { /* Handle question navigation */ },
+                    .clickable { // Переход на экран с соответствующим вопросом
+                        navController.navigate("question_screen/${index-1}") },
                 color = if (index == currentQuestionIndex + 1) Color.Black else Color.Gray
             )
         }
@@ -266,7 +309,6 @@ fun QuestionNavigationPanel(navController: NavController, currentQuestionIndex: 
         )
     }
 }
-
 
 @Composable
 fun PauseDialog(

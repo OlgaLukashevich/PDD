@@ -10,8 +10,11 @@ data class Question(
     val correct_answer: String,
     val answer_tip: String,
     val topic: List<String>,
-    val id: String
+    val id: String,
+    val trafficSign: TrafficSign?, // Добавляем поле для знака
+    val markup: Markup?           // Добавляем поле для разметки
 )
+
 
 data class Answer(
     val answer_text: String,
