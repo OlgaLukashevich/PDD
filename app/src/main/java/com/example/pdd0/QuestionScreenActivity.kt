@@ -326,15 +326,22 @@ data class QuestionState(
 
 @Composable
 fun QuestionNavigationPanel(navController: NavController, currentQuestionIndex: Int) {
+    var isPaused by remember { mutableStateOf(false) } // Отслеживаем состояние паузы
     var showPauseDialog by remember { mutableStateOf(false) }
     Row(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Кнопка паузы
-        IconButton(onClick = { showPauseDialog = true }) {
-            Icon(imageVector = Icons.Filled.Pause, contentDescription = "Pause")
+        // Кнопка Play/Pause
+        IconButton(onClick = {
+            isPaused = !isPaused // Переключаем состояние
+            showPauseDialog = isPaused // Показываем диалог только при нажатии на паузу
+        }) {
+            Icon(
+                imageVector = if (isPaused) Icons.Filled.PlayArrow else Icons.Filled.Pause,
+                contentDescription = if (isPaused) "Play" else "Pause"
+            )
         }
         // Навигация по вопросам
         (1..10).forEach { index ->  // Можно заменить диапазон, чтобы он был от 1 до количества вопросов
@@ -357,14 +364,17 @@ fun QuestionNavigationPanel(navController: NavController, currentQuestionIndex: 
             navController = navController, // Передаем navController
             onResume = {
                 showPauseDialog = false
+                isPaused = false // Автоматически меняем иконку на паузу при закрытии диалога
             },
             onGoHome = {
                 showPauseDialog = false
+                isPaused = false // Возвращаем плей при переходе на главную
                 navController.navigate("main_screen") // Переход на главный экран
             },
             onAddToFavorites = {
                 // Логика для добавления в избранное
                 showPauseDialog = false
+                isPaused = false // Возвращаем плей при добавлении в избранное
             }
         )
     }
