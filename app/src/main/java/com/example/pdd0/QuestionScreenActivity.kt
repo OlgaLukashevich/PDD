@@ -1,9 +1,11 @@
 package com.example.pdd0
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,16 +19,19 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.zIndex
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import coil.compose.rememberAsyncImagePainter
 import coil.compose.rememberImagePainter
 import coil.request.ImageRequest
 import com.example.pdd0.parser.parseJson
@@ -62,6 +67,7 @@ fun QuestionScreen(navController: NavController, questionIndex: Int) {
     var questionStates by remember { mutableStateOf(mutableMapOf<Int, QuestionState>()) } // Состояние всех вопросов
     var isTestFinished by remember { mutableStateOf(false) } // Флаг завершения теста
     val questionList = parseJson(context = LocalContext.current) // Загрузка вопросов
+    var isImageFullScreen by remember { mutableStateOf(false) } // Отслеживаем увеличение картинки
 
     // Переход от индекса к конкретному вопросу
     val currentQuestion = questionList.getOrNull(currentQuestionIndex)
@@ -111,38 +117,54 @@ fun QuestionScreen(navController: NavController, questionIndex: Int) {
         // Панель навигации
         QuestionNavigationPanel(navController, currentQuestionIndex)
         Spacer(modifier = Modifier.height(22.dp))
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(230.dp) // Ограничиваем высоту Box
+
+                .height(230.dp),  // Увеличиваем высоту, чтобы уместить и текст, и изображение
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
            // Вопрос
             Text(
                 text = currentQuestion.question,
-                fontSize = 24.sp,
+                fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // Выводим изображение вопроса
-            if (currentQuestion.image.isNotEmpty()) {
-                val imagePainter = rememberImagePainter(
-                    data = ImageRequest.Builder(LocalContext.current)
+            if (!currentQuestion.image.isNullOrEmpty()) {  // Загружаем только если есть путь
+                val context = LocalContext.current
+
+                try {
+                    val inputStream = context.assets.open(currentQuestion.image)
+                    Log.d("ImageCheck", "Файл найден: ${currentQuestion.image}")
+                } catch (e: Exception) {
+                    Log.e("ImageCheck", "Файл не найден: ${currentQuestion.image}", e)
+                }
+
+                val imagePainter = rememberAsyncImagePainter(
+                    model = ImageRequest.Builder(context)
                         .data("file:///android_asset/${currentQuestion.image}")
                         .build()
                 )
+
                 Image(
                     painter = imagePainter,
                     contentDescription = "Image for question",
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(200.dp)
-                        .padding(16.dp),
-                    contentScale = ContentScale.Crop
+                        .padding(16.dp)
+                    .clickable { isImageFullScreen = true }, // Нажатие для увеличения
+                contentScale = ContentScale.Fit
                 )
 
+            } else {
+                Log.d("ImageCheck", "Изображение отсутствует, пропускаем загрузку")
             }
+
 
         }
         // Ответы
@@ -203,7 +225,45 @@ fun QuestionScreen(navController: NavController, questionIndex: Int) {
             }
         }
     }
+
+    // Диалоговое окно для увеличенной картинки
+    if (isImageFullScreen) {
+        Dialog(onDismissRequest = { isImageFullScreen = false }) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black) // Затемнённый фон
+                    .clickable { isImageFullScreen = false } // Закрытие при нажатии
+            ) {
+                val imagePainter = rememberAsyncImagePainter(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data("file:///android_asset/${currentQuestion.image}")
+                        .build()
+                )
+
+                IconButton(
+                    onClick = { isImageFullScreen = false },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(16.dp)
+                ) {
+                    Icon(imageVector = Icons.Filled.Close, contentDescription = "Close", tint = Color.White)
+                }
+
+
+                Image(
+                    painter = imagePainter,
+                    contentDescription = "Full-screen image",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    contentScale = ContentScale.Fit
+                )
+            }
+        }
+    }
 }
+
 
 @Composable
 fun ResultScreen(correctAnswersCount: Int, totalQuestions: Int, navController: NavController) {
