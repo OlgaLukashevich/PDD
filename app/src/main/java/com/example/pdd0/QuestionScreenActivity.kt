@@ -62,18 +62,6 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
 
      val questionList = parseJson(context = LocalContext.current) // Загрузка вопросов
 
-    // Следим за currentQuestionIndex в ViewModel
-  //  val currentQuestionIndex by remember { derivedStateOf { viewModel.currentQuestionIndex } }
-//    // Загружаем сохранённые ответы перед рендерингом UI
-//    LaunchedEffect(currentQuestionIndex) {
-//        viewModel.loadQuestionState()
-//    }
-// Загружаем состояние для текущего вопроса (если оно есть)
-//    val currentState by remember { derivedStateOf { viewModel.getCurrentQuestionState() } }
-//    val selectedAnswer = viewModel.selectedAnswer
-//    val isAnswerCorrect = viewModel.isAnswerCorrect
-//    val isAnswerLocked = viewModel.getCurrentQuestionState().isAnswerLocked
-
 
     // При изменении индекса загружаем состояние ВьюМодели
     LaunchedEffect(questionIndex) {
@@ -300,6 +288,13 @@ fun QuestionNavigationPanel(navController: NavController, viewModel: QuestionVie
         }
         // Навигация по вопросам
         (1..10).forEach { index ->  // Можно заменить диапазон, чтобы он был от 1 до количества вопросов
+            val questionState = viewModel.questionStates[index - 1]
+            val color = when {
+                viewModel.currentQuestionIndex == index - 1 -> Color.Black  // Текущий вопрос
+                questionState?.selectedAnswer == null -> Color.Gray  // Не отвечен
+                questionState.isAnswerCorrect -> Color.Green        // Правильный ответ
+                else -> Color.Red                                   // Неправильный ответ
+            }
             Text(
                 text = "$index",
                 fontSize = 18.sp,
@@ -320,7 +315,8 @@ fun QuestionNavigationPanel(navController: NavController, viewModel: QuestionVie
                             launchSingleTop = true // Гарантируем, что не создаётся новый экран
                         }
                     },
-                color = if (index == viewModel.currentQuestionIndex + 1) Color.Black else Color.Gray
+                color = color,
+                fontWeight = if (viewModel.currentQuestionIndex == index - 1) FontWeight.Bold else FontWeight.Normal
             )
         }
     }
