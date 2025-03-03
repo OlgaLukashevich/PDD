@@ -45,6 +45,8 @@ class MainScreenActivity : ComponentActivity() {
     }
 }
 
+
+
 @Composable
 fun MainScreen(navController: NavController) {
     Column(
@@ -139,6 +141,9 @@ fun SearchBar() {
         )
     }
 }
+
+
+
 
 @Composable
 fun SocialIcons() {

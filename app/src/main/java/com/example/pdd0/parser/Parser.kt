@@ -33,7 +33,7 @@ fun parseJson(context: Context): List<Question> {
                     for (question in questionsFromFile) {
                         val imagePath = question.image.replace("./images/", "").replace("A_B/", "") // Убираем `./images/` и дублирующийся `A_B/`
 // Если изображение - "no_image.jpg", заменяем на пустую строку
-                        val image = if (imagePath == "no_image.jpg") "" else "$folderPathImg/$imagePath"
+                        val image = if (imagePath == "no_image.jpg") " " else "$folderPathImg/$imagePath"
 
                         // Создаём новый объект с обновлённым путём
                         val modifiedQuestion = question.copy(image = image)

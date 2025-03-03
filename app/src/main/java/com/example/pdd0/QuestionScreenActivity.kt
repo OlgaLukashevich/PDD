@@ -27,12 +27,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.zIndex
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
-import coil.compose.rememberImagePainter
 import coil.request.ImageRequest
 import com.example.pdd0.parser.parseJson
 
@@ -42,63 +42,71 @@ class QuestionScreenActivity : ComponentActivity() {
         setContent {
             // Навигация
             val navController = rememberNavController()
+            val questionViewModel: QuestionViewModel = viewModel() // Создаём ViewModel
+
             NavHost(navController = navController, startDestination = "main_screen") {
                 composable("main_screen") { MainScreen(navController) }
                 composable("question_screen/{questionIndex}") { backStackEntry ->
-                    // Извлекаем индекс вопроса из аргументов
+                // Извлекаем индекс вопроса из аргументов
                     val questionIndex = backStackEntry.arguments?.getString("questionIndex")?.toIntOrNull() ?: 1
-                    QuestionScreen(navController = navController, questionIndex = questionIndex - 1) // Индекс начинается с 0
+                    QuestionScreen(navController, questionIndex - 1, questionViewModel) // Передаем ViewModel
                 }
-                composable("all_questions_screen") {
-                    AllQuestionsScreen(navController = navController)
-                }
+                composable("all_questions_screen") { AllQuestionsScreen(navController) }
             }
         }
     }
 }
 
-
-
 @Composable
-fun QuestionScreen(navController: NavController, questionIndex: Int) {
-    var currentQuestionIndex by remember { mutableStateOf(questionIndex) } // Начинаем с переданного индекса
-    var selectedAnswer by remember { mutableStateOf<String?>(null) } // Хранение выбранного ответа
-    var isAnswerCorrect by remember { mutableStateOf(false) } // Проверка правильности ответа
-    var questionStates by remember { mutableStateOf(mutableMapOf<Int, QuestionState>()) } // Состояние всех вопросов
-    var isTestFinished by remember { mutableStateOf(false) } // Флаг завершения теста
-    val questionList = parseJson(context = LocalContext.current) // Загрузка вопросов
+fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: QuestionViewModel = viewModel()) {
+
+     val questionList = parseJson(context = LocalContext.current) // Загрузка вопросов
+
+    // Следим за currentQuestionIndex в ViewModel
+  //  val currentQuestionIndex by remember { derivedStateOf { viewModel.currentQuestionIndex } }
+//    // Загружаем сохранённые ответы перед рендерингом UI
+//    LaunchedEffect(currentQuestionIndex) {
+//        viewModel.loadQuestionState()
+//    }
+// Загружаем состояние для текущего вопроса (если оно есть)
+//    val currentState by remember { derivedStateOf { viewModel.getCurrentQuestionState() } }
+//    val selectedAnswer = viewModel.selectedAnswer
+//    val isAnswerCorrect = viewModel.isAnswerCorrect
+//    val isAnswerLocked = viewModel.getCurrentQuestionState().isAnswerLocked
+
+
+    // При изменении индекса загружаем состояние ВьюМодели
+    LaunchedEffect(questionIndex) {
+        if (viewModel.currentQuestionIndex != questionIndex) {
+            viewModel.saveCurrentQuestionState() // Сначала сохраняем ответ текущего вопроса
+            viewModel.currentQuestionIndex = questionIndex // Обновляем индекс
+            viewModel.loadQuestionState() // Загружаем сохранённое состояние
+        }
+    }
+
     var isImageFullScreen by remember { mutableStateOf(false) } // Отслеживаем увеличение картинки
-
     // Переход от индекса к конкретному вопросу
-    val currentQuestion = questionList.getOrNull(currentQuestionIndex)
-
+    val currentQuestion = questionList.getOrNull(viewModel.currentQuestionIndex)
     // Если данных нет, показываем заглушку
     if (currentQuestion == null) {
         Text(text = "Ошибка загрузки вопроса", fontSize = 24.sp)
         return
     }
 
-    // Загружаем состояние для текущего вопроса (если оно есть)
-    val currentState = questionStates[currentQuestionIndex]
-    selectedAnswer = currentState?.selectedAnswer
-    isAnswerCorrect = currentState?.isAnswerCorrect ?: false
-    val isAnswerLocked = currentState?.isAnswerLocked ?: false
-
-    // Подсчет правильных ответов
-    val correctAnswersCount = questionStates.values.count { it.isAnswerCorrect }
+        // Подсчет правильных ответов
+    val correctAnswersCount = viewModel.questionStates.values.count { questionState: QuestionState -> questionState.isAnswerCorrect }
 
     // Проверяем, завершил ли пользователь все вопросы
-       if (isTestFinished) {
-        // Показываем результат, когда тест завершен
-        ResultScreen(correctAnswersCount = correctAnswersCount, totalQuestions = questionList.size, navController = navController)
+    if (viewModel.isTestFinished) {
+        ResultScreen(correctAnswersCount, questionList.size, navController)
         return
     }
 
 
     // Проверяем, если все вопросы отвечены, то показываем результат
-    if (currentQuestionIndex == 10) { //== questionList.size
+    if (viewModel.currentQuestionIndex == 10) { //== questionList.size
         // Завершаем тест
-        isTestFinished = true
+        viewModel.isTestFinished = true
     }
 
     Column(
@@ -115,8 +123,9 @@ fun QuestionScreen(navController: NavController, questionIndex: Int) {
         )
         Spacer(modifier = Modifier.height(16.dp))
         // Панель навигации
-        QuestionNavigationPanel(navController, currentQuestionIndex)
+        QuestionNavigationPanel(navController, viewModel)
         Spacer(modifier = Modifier.height(22.dp))
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -124,7 +133,7 @@ fun QuestionScreen(navController: NavController, questionIndex: Int) {
                 .height(230.dp),  // Увеличиваем высоту, чтобы уместить и текст, и изображение
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-           // Вопрос
+            // Вопрос
             Text(
                 text = currentQuestion.question,
                 fontSize = 20.sp,
@@ -157,8 +166,8 @@ fun QuestionScreen(navController: NavController, questionIndex: Int) {
                         .fillMaxWidth()
                         .height(200.dp)
                         .padding(16.dp)
-                    .clickable { isImageFullScreen = true }, // Нажатие для увеличения
-                contentScale = ContentScale.Fit
+                        .clickable { isImageFullScreen = true }, // Нажатие для увеличения
+                    contentScale = ContentScale.Fit
                 )
 
             } else {
@@ -169,21 +178,27 @@ fun QuestionScreen(navController: NavController, questionIndex: Int) {
         }
         // Ответы
         currentQuestion.answers.forEach { answer ->
+            val questionState = viewModel.getCurrentQuestionState()
+            val isSelected = questionState.selectedAnswer == answer.answer_text
+            val isCorrect = questionState.isAnswerCorrect
+
             AnswerButton(
                 answerText = answer.answer_text,
-                isCorrect = answer.is_correct,
-                isSelected = answer.answer_text == selectedAnswer,
+                isCorrect = isCorrect,
+                isSelected = isSelected,
                 onClick = {
-                    if (!isAnswerLocked) {
-                        selectedAnswer = answer.answer_text
-                        isAnswerCorrect = answer.is_correct
-                        // Сохраняем ответ и блокируем возможность изменения
-                        questionStates[currentQuestionIndex] = QuestionState(selectedAnswer, isAnswerCorrect, true)
+                    if (!questionState.isAnswerLocked) {
+                        viewModel.saveAnswer(answer.answer_text, answer.is_correct)
                     }
                 },
-                isAnswerCorrect = isAnswerCorrect
+                isAnswerCorrect = isCorrect
             )
         }
+
+
+
+
+
 
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -196,35 +211,33 @@ fun QuestionScreen(navController: NavController, questionIndex: Int) {
                 .zIndex(1f)  // Устанавливаем приоритет отображения
         ) {
             // Кнопка "Назад"
-            IconButton(onClick = {
-                if (currentQuestionIndex > 0) {
-                    currentQuestionIndex -= 1
-                    selectedAnswer = questionStates[currentQuestionIndex]?.selectedAnswer
-                    isAnswerCorrect = questionStates[currentQuestionIndex]?.isAnswerCorrect ?: false
-                }
-            },
-                modifier = Modifier.size(48.dp)  // Увеличиваем размер кнопок
+            IconButton(
+                onClick = {
+                    if (viewModel.currentQuestionIndex > 0) {
+                        viewModel.saveCurrentQuestionState()
+                        viewModel.currentQuestionIndex--
+                    }
+                },
+                enabled = viewModel.currentQuestionIndex > 0 // Блокируем кнопку, если вопрос первый
             ) {
                 Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Previous")
             }
+
             // Кнопка "Вперед"
-            IconButton(onClick = {
-                if (currentQuestionIndex < questionList.size - 1) {
-                    currentQuestionIndex += 1
-                    selectedAnswer = questionStates[currentQuestionIndex]?.selectedAnswer
-                    isAnswerCorrect = questionStates[currentQuestionIndex]?.isAnswerCorrect ?: false
-                }
-                else {
-                    // Завершаем тест после последнего вопроса
-                    isTestFinished = true
-                }
-            },
-                modifier = Modifier.size(48.dp)  // Увеличиваем размер кнопок
+            IconButton(
+                onClick = {
+                    if (viewModel.currentQuestionIndex < questionList.size - 1) {
+                        viewModel.saveCurrentQuestionState()
+                        viewModel.currentQuestionIndex++
+                    }
+                },
+                enabled = viewModel.currentQuestionIndex < questionList.size - 1 // Блокируем, если последний вопрос
             ) {
                 Icon(imageVector = Icons.Filled.ArrowForward, contentDescription = "Next")
             }
         }
     }
+
 
     // Диалоговое окно для увеличенной картинки
     if (isImageFullScreen) {
@@ -263,6 +276,79 @@ fun QuestionScreen(navController: NavController, questionIndex: Int) {
         }
     }
 }
+
+
+
+@Composable
+fun QuestionNavigationPanel(navController: NavController, viewModel: QuestionViewModel) {
+    var isPaused by remember { mutableStateOf(false) } // Отслеживаем состояние паузы
+    var showPauseDialog by remember { mutableStateOf(false) }
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Кнопка Play/Pause
+        IconButton(onClick = {
+            isPaused = !isPaused // Переключаем состояние
+            showPauseDialog = isPaused // Показываем диалог только при нажатии на паузу
+        }) {
+            Icon(
+                imageVector = if (isPaused) Icons.Filled.PlayArrow else Icons.Filled.Pause,
+                contentDescription = if (isPaused) "Play" else "Pause"
+            )
+        }
+        // Навигация по вопросам
+        (1..10).forEach { index ->  // Можно заменить диапазон, чтобы он был от 1 до количества вопросов
+            Text(
+                text = "$index",
+                fontSize = 18.sp,
+                modifier = Modifier
+                    .padding(4.dp)
+                    .clickable {
+                        // Сначала сохраняем ответ перед сменой вопроса
+                        viewModel.saveCurrentQuestionState()
+
+                        // Если индекс уже тот же самый, просто загружаем состояние
+                        if (viewModel.currentQuestionIndex != index - 1) {
+                            viewModel.currentQuestionIndex = index - 1
+                            viewModel.loadQuestionState()
+                        }
+
+                        // Переход без пересоздания `QuestionScreen`
+                        navController.navigate("question_screen/${index - 1}") {
+                            launchSingleTop = true // Гарантируем, что не создаётся новый экран
+                        }
+                    },
+                color = if (index == viewModel.currentQuestionIndex + 1) Color.Black else Color.Gray
+            )
+        }
+    }
+
+
+    // Диалог с вариантами действий
+    if (showPauseDialog) {
+
+        PauseDialog(
+            navController = navController, // Передаем navController
+            onResume = {
+                showPauseDialog = false
+                isPaused = false // Автоматически меняем иконку на паузу при закрытии диалога
+            },
+            onGoHome = {
+                showPauseDialog = false
+                isPaused = false // Возвращаем плей при переходе на главную
+                navController.navigate("main_screen") // Переход на главный экран
+            },
+            onAddToFavorites = {
+                // Логика для добавления в избранное
+                showPauseDialog = false
+                isPaused = false // Возвращаем плей при добавлении в избранное
+            }
+        )
+    }
+}
+
 
 
 @Composable
@@ -323,62 +409,6 @@ data class QuestionState(
     val isAnswerCorrect: Boolean,
     val isAnswerLocked: Boolean
 )
-
-@Composable
-fun QuestionNavigationPanel(navController: NavController, currentQuestionIndex: Int) {
-    var isPaused by remember { mutableStateOf(false) } // Отслеживаем состояние паузы
-    var showPauseDialog by remember { mutableStateOf(false) }
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Кнопка Play/Pause
-        IconButton(onClick = {
-            isPaused = !isPaused // Переключаем состояние
-            showPauseDialog = isPaused // Показываем диалог только при нажатии на паузу
-        }) {
-            Icon(
-                imageVector = if (isPaused) Icons.Filled.PlayArrow else Icons.Filled.Pause,
-                contentDescription = if (isPaused) "Play" else "Pause"
-            )
-        }
-        // Навигация по вопросам
-        (1..10).forEach { index ->  // Можно заменить диапазон, чтобы он был от 1 до количества вопросов
-            Text(
-                text = "$index",
-                fontSize = 18.sp,
-                modifier = Modifier
-                    .padding(4.dp)
-                    .clickable { // Переход на экран с соответствующим вопросом
-                        navController.navigate("question_screen/${index-1}") },
-                color = if (index == currentQuestionIndex + 1) Color.Black else Color.Gray
-            )
-        }
-    }
-
-    // Диалог с вариантами действий
-    if (showPauseDialog) {
-
-        PauseDialog(
-            navController = navController, // Передаем navController
-            onResume = {
-                showPauseDialog = false
-                isPaused = false // Автоматически меняем иконку на паузу при закрытии диалога
-            },
-            onGoHome = {
-                showPauseDialog = false
-                isPaused = false // Возвращаем плей при переходе на главную
-                navController.navigate("main_screen") // Переход на главный экран
-            },
-            onAddToFavorites = {
-                // Логика для добавления в избранное
-                showPauseDialog = false
-                isPaused = false // Возвращаем плей при добавлении в избранное
-            }
-        )
-    }
-}
 
 @Composable
 fun PauseDialog(
