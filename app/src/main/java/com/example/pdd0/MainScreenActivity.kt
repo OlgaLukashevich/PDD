@@ -35,7 +35,10 @@ class MainScreenActivity : ComponentActivity() {
                     val questionIndex = backStackEntry.arguments?.getString("questionIndex")?.toIntOrNull() ?: 0
                     QuestionScreen(navController = navController, questionIndex = questionIndex)
                 }
-                composable("favorite_question_screen") { FavoriteQuestionScreen(navController = navController) }  // Новый экран
+                composable("favorite_question_screen") { FavoriteQuestionScreen(
+                    navController = navController,
+                    questionViewModel = questionViewModel
+                ) }  // Новый экран
 
                 composable("all_questions_screen") {
                     AllQuestionsScreen(navController = navController, viewModel = questionViewModel) // ✅ Передаём viewModel

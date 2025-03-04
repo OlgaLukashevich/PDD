@@ -13,6 +13,9 @@ class QuestionViewModel : ViewModel() {
     var currentTicketStartIndex by mutableStateOf(0) // ✅ Сохраняем первый вопрос текущего билета
 
 
+   // var showFavoriteMessage by mutableStateOf(false)
+    var isTicketFavorite by mutableStateOf(false)
+
     fun getCurrentQuestionState(): QuestionState {
         return questionStates[currentQuestionIndex] ?: QuestionState(null, false, false)
     }
@@ -119,6 +122,29 @@ class QuestionViewModel : ViewModel() {
 
         lastTicketStartIndex = ticketIndex // ✅ Запоминаем первый вопрос билета
         currentQuestionIndex = ticketIndex
+    }
+
+
+
+    // 📌 Список избранных билетов
+    var favoriteTickets = mutableStateListOf<Int>()
+
+    // ✅ Метод для добавления/удаления билета в избранное
+    fun toggleFavoriteTicket(ticketIndex: Int): Boolean {
+        return if (favoriteTickets.contains(ticketIndex)) {
+            favoriteTickets.remove(ticketIndex)
+            isTicketFavorite = false
+            false // Билет удален из избранного
+        } else {
+            favoriteTickets.add(ticketIndex)
+            isTicketFavorite = true
+            true // Билет добавлен в избранное
+        }
+    }
+
+    // ✅ Проверка, является ли билет избранным
+    fun isTicketFavorite(ticketIndex: Int): Boolean {
+        return favoriteTickets.contains(ticketIndex)
     }
 
 }

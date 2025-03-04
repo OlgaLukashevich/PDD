@@ -2,6 +2,7 @@ package com.example.pdd0
 
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -35,6 +36,7 @@ import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.example.pdd0.parser.parseJson
+import kotlinx.coroutines.delay
 
 class QuestionScreenActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -53,7 +55,11 @@ class QuestionScreenActivity : ComponentActivity() {
                 }
                 composable("all_questions_screen") {
                     AllQuestionsScreen(navController = navController, viewModel = questionViewModel) // ✅ Передаём viewModel
-                }            }
+                }
+                composable("favorite_question_screen") {
+                    FavoriteQuestionScreen(navController, questionViewModel)
+                }
+            }
         }
     }
 }
@@ -291,6 +297,8 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
 fun QuestionNavigationPanel(navController: NavController, viewModel: QuestionViewModel) {
     var isPaused by remember { mutableStateOf(false) } // Отслеживаем состояние паузы
     var showPauseDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current // Получаем контекст
+
     Row(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         modifier = Modifier.fillMaxWidth(),
@@ -359,9 +367,14 @@ fun QuestionNavigationPanel(navController: NavController, viewModel: QuestionVie
                 navController.navigate("main_screen") // Переход на главный экран
             },
             onAddToFavorites = {
-                // Логика для добавления в избранное
+                val wasAdded = viewModel.toggleFavoriteTicket(viewModel.currentQuestionIndex)
+                if (wasAdded) {
+                    Toast.makeText(context, "Билет добавлен в избранное", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(context, "Билет удален из избранного", Toast.LENGTH_SHORT).show()
+                }
                 showPauseDialog = false
-                isPaused = false // Возвращаем плей при добавлении в избранное
+                isPaused = false
             }
         )
     }
@@ -377,12 +390,19 @@ data class QuestionState(
 
 @Composable
 fun PauseDialog(
+
     navController: NavController, // Добавляем NavController
     viewModel: QuestionViewModel, // ✅ Добавляем ViewModel для управления билетами
     onResume: () -> Unit,
     onGoHome: () -> Unit,
     onAddToFavorites: () -> Unit
 ) {
+
+
+    val context = LocalContext.current
+    val isFavorite = viewModel.isTicketFavorite(viewModel.currentQuestionIndex)
+
+
     AlertDialog(
         onDismissRequest = {},
         title = {
@@ -398,13 +418,22 @@ fun PauseDialog(
                 }) {
                     Text("На главную")
                 }
-                TextButton(onClick = onAddToFavorites) {
-                    Text("Добавить в избранное")
+                // Кнопка добавления в избранное
+                TextButton(onClick = {
+                    val wasAdded = viewModel.toggleFavoriteTicket(viewModel.currentQuestionIndex)
+                    if (wasAdded) {
+                        Toast.makeText(context, "Билет добавлен в избранное", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(context, "Билет удален из избранного", Toast.LENGTH_SHORT).show()
+                    }
+                    onResume() // Закрываем диалог
+                }) {
+                    Text(if (isFavorite) "Добавлен в избранное" else "Добавить в избранное")
                 }
                 TextButton(onClick = {
-                    viewModel.loadRandomTicket() // ✅ Загружаем новый случайный билет
+                    viewModel.loadRandomTicket()
                     navController.navigate("question_screen/${viewModel.currentQuestionIndex}") {
-                        popUpTo("main_screen") { inclusive = false } // ✅ Удаляем старые экраны
+                        popUpTo("main_screen") { inclusive = false }
                     }
                 }) {
                     Text("Следующий случайный билет(пройти заново не работает)")
