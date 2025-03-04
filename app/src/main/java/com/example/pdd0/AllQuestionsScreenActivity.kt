@@ -24,6 +24,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.*
 import com.example.pdd0.dataClass.Question
@@ -33,110 +34,91 @@ class AllQuestionsScreenActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            // Навигация
             val navController = rememberNavController()
+            val questionViewModel: QuestionViewModel = viewModel() // ✅ Создаём ViewModel
+
             NavHost(navController = navController, startDestination = "all_questions_screen") {
-                composable("all_questions_screen") { AllQuestionsScreen(navController = navController) }
-                composable("question_screen/{ticketId}") { backStackEntry ->
-                    QuestionScreen(ticketId = backStackEntry.arguments?.getString("ticketId") ?: "")
+                composable("all_questions_screen") {
+                    AllQuestionsScreen(navController, questionViewModel)
                 }
+                composable("question_screen/{ticketNumber}") { backStackEntry ->
+                    val ticketNumber = backStackEntry.arguments?.getString("ticketNumber")?.toIntOrNull() ?: 1
+                    QuestionScreen(navController, ticketNumber) // ✅ Передаём как Int
+                }
+
+
+
             }
         }
     }
 }
 
+
+
 @Composable
-fun AllQuestionsScreen(navController: NavController) {
-    // Состояние для хранения списка вопросов
+fun AllQuestionsScreen(navController: NavController, viewModel: QuestionViewModel) {
     var ticketList by remember { mutableStateOf<List<Question>>(emptyList()) }
     val context = LocalContext.current
 
-    // Загружаем данные
+    // ✅ Загружаем вопросы один раз
     LaunchedEffect(Unit) {
-        try {
-            ticketList = parseJson(context) // Загружаем вопросы из JSON
-            Log.d("AllQuestionsScreen", "Загружено ${ticketList.size} вопросов.") // Логируем размер списка
-        } catch (e: Exception) {
-            Toast.makeText(context, "Ошибка загрузки данных", Toast.LENGTH_SHORT).show()
-        }
+        ticketList = parseJson(context)
     }
 
-    // Группируем вопросы по номерам билетов, чтобы отобразить только уникальные билеты
     val uniqueTickets = ticketList
-        .groupBy { it.ticket_number }  // Группируем по номеру билета
-        .keys.toList()  // Получаем только уникальные номера билетов
-        .sortedBy { it.substringAfter("Билет ").toIntOrNull() ?: Int.MAX_VALUE } // Сортировка по числовому значению
-
-
-
+        .groupBy { it.ticket_number }
+        .keys.toList()
+        .sortedBy { it.substringAfter("Билет ").toIntOrNull() ?: Int.MAX_VALUE }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
+        modifier = Modifier.fillMaxSize().padding(16.dp)
     ) {
-        // Заголовок с кнопкой "Назад"
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = {
-                // Переход на главный экран
-                navController.popBackStack("main_screen", inclusive = false)  // Мы возвращаемся на главный экран
-            }) {
+            IconButton(onClick = { navController.popBackStack("main_screen", inclusive = false) }) {
                 Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Back")
             }
-            Text(
-                text = "Билеты",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Text(text = "Билеты", fontSize = 24.sp, fontWeight = FontWeight.Bold)
         }
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Список билетов
-        TicketList(uniqueTickets, navController)
-    }
-}
-
-@Composable
-fun TicketList(ticketNumbers: List<String>, navController: NavController) {
-    if (ticketNumbers.isEmpty()) {
-        Text(text = "Загружаются билеты...", fontSize = 18.sp)
-        return
-    }
-
-    LazyColumn(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        items(ticketNumbers) { ticketNumber ->
-            TicketItem(ticketNumber, navController)
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
+            items(uniqueTickets) { ticketNumber ->
+                TicketItem(ticketNumber, ticketList, navController, viewModel) // ✅ Передаём список вопросов
+            }
         }
     }
 }
 
+
+
 @Composable
-fun TicketItem(ticketNumber: String, navController: NavController) {
+fun TicketItem(ticketNumber: String, questionList: List<Question>, navController: NavController, viewModel: QuestionViewModel) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
             .clickable {
-                // При клике на билет, переходим на экран с вопросами
-                navController.navigate("question_screen/$ticketNumber")
+                val firstQuestionIndex = questionList.indexOfFirst { it.ticket_number == ticketNumber } // ✅ Ищем первый вопрос билета
+
+                if (firstQuestionIndex != -1) {
+                    Log.d("TicketItem", "Открываю билет: $ticketNumber, Первый вопрос: $firstQuestionIndex")
+                    navController.navigate("question_screen/$firstQuestionIndex") // ✅ Передаём правильный индекс
+                } else {
+                    Log.e("TicketItem", "Ошибка: Вопросы для билета $ticketNumber не найдены")
+                }
             },
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Название билета
         Text(
-            text = "$ticketNumber",
+            text = ticketNumber,
             fontSize = 18.sp,
             modifier = Modifier.weight(1f)
         )
-
-        // Иконка звезды
         Icon(
             imageVector = Icons.Filled.StarBorder,
             contentDescription = "Favorite",
@@ -145,71 +127,3 @@ fun TicketItem(ticketNumber: String, navController: NavController) {
     }
 }
 
-
-@Composable
-fun QuestionScreen(ticketId: String) {
-    val currentQuestionIndex = 1
-
-    // Примерные данные. В реальном приложении можно подгружать данные по ticketId
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "$ticketId",
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        Text(
-            text = "Вопрос",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        AllQuestionsAnswerButton("Ответ 1")
-        AllQuestionsAnswerButton("Ответ 2")
-        AllQuestionsAnswerButton("Ответ 3")
-        AllQuestionsAnswerButton("Ответ 4")
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        Row(
-            horizontalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            IconButton(onClick = { /* Handle previous question */ }) {
-                Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Previous")
-            }
-            IconButton(onClick = { /* Handle next question */ }) {
-                Icon(imageVector = Icons.Filled.ArrowForward, contentDescription = "Next")
-            }
-        }
-    }
-}
-
-@Composable
-fun AllQuestionsAnswerButton(text: String) {
-    Button(
-        onClick = { /* Handle answer selection */ },
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        shape = RoundedCornerShape(8.dp)
-    ) {
-        Text(text = text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PreviewAllQuestionsScreen() {
-    val navController = rememberNavController()
-    AllQuestionsScreen(navController = navController)
-}

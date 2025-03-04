@@ -38,7 +38,7 @@ class MainScreenActivity : ComponentActivity() {
                 composable("favorite_question_screen") { FavoriteQuestionScreen(navController = navController) }  // Новый экран
 
                 composable("all_questions_screen") {
-                    AllQuestionsScreen(navController = navController)
+                    AllQuestionsScreen(navController = navController, viewModel = questionViewModel) // ✅ Передаём viewModel
                 }
                 // ✅ Поддерживаем передачу `correctAnswersCount`
                 composable("result_screen/{correctAnswers}") { backStackEntry ->
@@ -120,8 +120,9 @@ fun MenuButton(text: String, navController: NavController, viewModel: QuestionVi
                 }
 
 
-                "Все билеты" -> navController.navigate("all_questions_screen")
-                "Избранные билеты" -> navController.navigate("favorite_question_screen")
+                "Все билеты" -> {
+                    navController.navigate("all_questions_screen") // ✅ Если в NavHost передан viewModel, всё будет работать
+                }                "Избранные билеты" -> navController.navigate("favorite_question_screen")
                 "Экзамен" -> navController.navigate("exam_screen")
             }
         },

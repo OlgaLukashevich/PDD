@@ -51,16 +51,16 @@ class QuestionScreenActivity : ComponentActivity() {
                     val questionIndex = backStackEntry.arguments?.getString("questionIndex")?.toIntOrNull() ?: 1
                     QuestionScreen(navController, questionIndex - 1, questionViewModel) // Передаем ViewModel
                 }
-                composable("all_questions_screen") { AllQuestionsScreen(navController) }
-            }
+                composable("all_questions_screen") {
+                    AllQuestionsScreen(navController = navController, viewModel = questionViewModel) // ✅ Передаём viewModel
+                }            }
         }
     }
 }
 
 @Composable
 fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: QuestionViewModel = viewModel()) {
-
-     val questionList = parseJson(context = LocalContext.current) // Загрузка вопросов
+        val questionList = parseJson(context = LocalContext.current) // Загрузка вопросов
 
 
     // При изменении индекса загружаем состояние ВьюМодели

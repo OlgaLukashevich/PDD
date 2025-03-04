@@ -13,9 +13,6 @@ class QuestionViewModel : ViewModel() {
     var currentTicketStartIndex by mutableStateOf(0) // ✅ Сохраняем первый вопрос текущего билета
 
 
-    var selectedAnswer by mutableStateOf<String?>(null)
-    var isAnswerCorrect by mutableStateOf(false)
-
     fun getCurrentQuestionState(): QuestionState {
         return questionStates[currentQuestionIndex] ?: QuestionState(null, false, false)
     }
@@ -47,6 +44,12 @@ class QuestionViewModel : ViewModel() {
     fun findFirstUnanswered(): Int? {
         return (0 until 10).firstOrNull { questionStates[it]?.selectedAnswer == null }
     }
+
+
+
+    var lastTicketStartIndex by mutableStateOf(0) // ✅ Запоминаем номер последнего билета
+
+
 
 
     // 🔥 Новый метод для сброса теста
@@ -99,4 +102,23 @@ class QuestionViewModel : ViewModel() {
             isTestFinished = true
         }
     }
+
+
+//    fun loadSpecificTicket(ticketIndex: Int) {
+//        questionStates.clear() // ✅ Очищаем предыдущие ответы
+//        currentTicketStartIndex = ticketIndex // ✅ Сохраняем первый вопрос этого билета
+//        currentQuestionIndex = ticketIndex
+//        isTestFinished = false
+//    }
+
+
+    fun loadSpecificTicket(ticketIndex: Int) {
+        questionStates.clear()
+        correctAnswersCount = 0
+        isTestFinished = false
+
+        lastTicketStartIndex = ticketIndex // ✅ Запоминаем первый вопрос билета
+        currentQuestionIndex = ticketIndex
+    }
+
 }
