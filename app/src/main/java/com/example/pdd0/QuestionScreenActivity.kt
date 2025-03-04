@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -26,7 +27,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
@@ -45,7 +45,7 @@ class QuestionScreenActivity : ComponentActivity() {
             val questionViewModel: QuestionViewModel = viewModel() // Создаём ViewModel
 
             NavHost(navController = navController, startDestination = "main_screen") {
-                composable("main_screen") { MainScreen(navController) }
+                composable("main_screen") { MainScreen(navController, questionViewModel) }
                 composable("question_screen/{questionIndex}") { backStackEntry ->
                 // Извлекаем индекс вопроса из аргументов
                     val questionIndex = backStackEntry.arguments?.getString("questionIndex")?.toIntOrNull() ?: 1
@@ -81,21 +81,18 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
         return
     }
 
-        // Подсчет правильных ответов
-    val correctAnswersCount = viewModel.questionStates.values.count { questionState: QuestionState -> questionState.isAnswerCorrect }
 
-    // Проверяем, завершил ли пользователь все вопросы
+    // ✅ Получаем количество правильных ответов из ViewModel
+    val correctAnswersCount = viewModel.correctAnswersCount
+
+    // ✅ Если тест завершён, переходим к экрану результата, передавая `correctAnswersCount`
     if (viewModel.isTestFinished) {
-        ResultScreen(correctAnswersCount, questionList.size, navController)
+        LaunchedEffect(Unit) {
+            navController.navigate("result_screen/$correctAnswersCount")
+        }
         return
     }
 
-
-    // Проверяем, если все вопросы отвечены, то показываем результат
-    if (viewModel.currentQuestionIndex == 10) { //== questionList.size
-        // Завершаем тест
-        viewModel.isTestFinished = true
-    }
 
     Column(
         modifier = Modifier
@@ -164,6 +161,12 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
 
 
         }
+
+        // 🔥 Оборачиваем ответы в `Column(Modifier.weight(1f))`, чтобы кнопки не сдвигались
+        Column(
+            modifier = Modifier.weight(1f), // Заставляет ответы занимать оставшееся пространство
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
         // Ответы
         currentQuestion.answers.forEach { answer ->
             val questionState = viewModel.getCurrentQuestionState()
@@ -182,6 +185,7 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
                 isAnswerCorrect = isCorrect
             )
         }
+        }
 
 
 
@@ -190,40 +194,56 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
 
         Spacer(modifier = Modifier.height(32.dp))
 
+        // 🔥 Фиксируем кнопки "Назад" и "Вперед" внизу экрана
         Row(
             horizontalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)  // Добавляем отступы
-                .align(Alignment.CenterHorizontally)  // Центрируем кнопки
-                .zIndex(1f)  // Устанавливаем приоритет отображения
+                .padding(horizontal = 16.dp)
         ) {
-            // Кнопка "Назад"
-            IconButton(
-                onClick = {
-                    if (viewModel.currentQuestionIndex > 0) {
-                        viewModel.saveCurrentQuestionState()
-                        viewModel.currentQuestionIndex--
+
+                // 🔥 Кнопка "Назад"
+                IconButton(
+                    onClick = {
+                        if (viewModel.currentQuestionIndex > 0) {
+                            viewModel.saveCurrentQuestionState()
+                            viewModel.currentQuestionIndex--
+                        }
+                    },
+                    enabled = viewModel.currentQuestionIndex > 0
+                ) {
+                    Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Previous")
+                }
+
+            // Если все вопросы отвечены, показываем галочку
+            if (viewModel.allQuestionsAnswered()) {
+                IconButton(
+                    onClick = {
+                        navController.navigate("result_screen/${viewModel.correctAnswersCount}")
                     }
-                },
-                enabled = viewModel.currentQuestionIndex > 0 // Блокируем кнопку, если вопрос первый
-            ) {
-                Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Previous")
+                ) {
+                    Icon(imageVector = Icons.Filled.Check, contentDescription = "Finish")
+                }
+            } else {
+                // 🔥 Правильный переход "Вперёд"
+                IconButton(
+                    onClick = {
+                        viewModel.saveCurrentQuestionState()
+                        viewModel.moveToNextQuestion()
+                        navController.navigate("question_screen/${viewModel.currentQuestionIndex}") {
+                            launchSingleTop = true // ✅ Избегаем дублирования экранов
+                        }
+                    }
+                ) {
+                    Icon(imageVector = Icons.Filled.ArrowForward, contentDescription = "Next")
+                }
             }
 
-            // Кнопка "Вперед"
-            IconButton(
-                onClick = {
-                    if (viewModel.currentQuestionIndex < questionList.size - 1) {
-                        viewModel.saveCurrentQuestionState()
-                        viewModel.currentQuestionIndex++
-                    }
-                },
-                enabled = viewModel.currentQuestionIndex < questionList.size - 1 // Блокируем, если последний вопрос
-            ) {
-                Icon(imageVector = Icons.Filled.ArrowForward, contentDescription = "Next")
-            }
+
+
         }
+
+
     }
 
 
@@ -286,37 +306,38 @@ fun QuestionNavigationPanel(navController: NavController, viewModel: QuestionVie
                 contentDescription = if (isPaused) "Play" else "Pause"
             )
         }
-        // Навигация по вопросам
-        (1..10).forEach { index ->  // Можно заменить диапазон, чтобы он был от 1 до количества вопросов
-            val questionState = viewModel.questionStates[index - 1]
+
+        val baseIndex = (viewModel.currentQuestionIndex / 10) * 10 // Определяем первый вопрос текущего билета
+
+        ( 0..9).forEach { offset ->
+            val questionIndex = baseIndex + offset
+            val questionState = viewModel.questionStates[questionIndex]
+
             val color = when {
-                viewModel.currentQuestionIndex == index - 1 -> Color.Black  // Текущий вопрос
+                viewModel.currentQuestionIndex == questionIndex -> Color.Black  // Текущий вопрос
                 questionState?.selectedAnswer == null -> Color.Gray  // Не отвечен
                 questionState.isAnswerCorrect -> Color.Green        // Правильный ответ
                 else -> Color.Red                                   // Неправильный ответ
             }
+
             Text(
-                text = "$index",
+                text = "${offset + 1}",
                 fontSize = 18.sp,
                 modifier = Modifier
                     .padding(4.dp)
                     .clickable {
-                        // Сначала сохраняем ответ перед сменой вопроса
                         viewModel.saveCurrentQuestionState()
-
-                        // Если индекс уже тот же самый, просто загружаем состояние
-                        if (viewModel.currentQuestionIndex != index - 1) {
-                            viewModel.currentQuestionIndex = index - 1
+                        if (viewModel.currentQuestionIndex != questionIndex) {
+                            viewModel.currentQuestionIndex = questionIndex
                             viewModel.loadQuestionState()
                         }
 
-                        // Переход без пересоздания `QuestionScreen`
-                        navController.navigate("question_screen/${index - 1}") {
-                            launchSingleTop = true // Гарантируем, что не создаётся новый экран
+                        navController.navigate("question_screen/$questionIndex") {
+                            launchSingleTop = true
                         }
                     },
                 color = color,
-                fontWeight = if (viewModel.currentQuestionIndex == index - 1) FontWeight.Bold else FontWeight.Normal
+                fontWeight = if (viewModel.currentQuestionIndex == questionIndex) FontWeight.Bold else FontWeight.Normal
             )
         }
     }
@@ -327,6 +348,7 @@ fun QuestionNavigationPanel(navController: NavController, viewModel: QuestionVie
 
         PauseDialog(
             navController = navController, // Передаем navController
+            viewModel = viewModel, // ✅ Передаём ViewModel для кнопки "Следующий случайный билет"
             onResume = {
                 showPauseDialog = false
                 isPaused = false // Автоматически меняем иконку на паузу при закрытии диалога
@@ -347,59 +369,6 @@ fun QuestionNavigationPanel(navController: NavController, viewModel: QuestionVie
 
 
 
-@Composable
-fun ResultScreen(correctAnswersCount: Int, totalQuestions: Int, navController: NavController) {
-    val resultText = "$correctAnswersCount/10"
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "Тест завершен!",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = "Ваш результат: $resultText",
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold,
-            color = if (correctAnswersCount == 10) Color.Green else Color.Red //== totalQuestions
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        Button(onClick = {
-            // Логика для повторного прохождения теста или перехода к следующему билету
-        }) {
-            Text("Пройти заново")
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-        // Кнопка добавить в избранное
-        Button(onClick = {navController.navigate("favorite_question_screen")}) {
-            Text("Добавить в избранное")
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-        // Кнопка следующий билет
-        Button(onClick = { }) {
-            Text("Следующий билет")
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-        // Кнопка вернуться на главную
-        Button(onClick = {
-            navController.navigate("main_screen") }) {
-            Text("Главная")
-        }
-    }
-
-
-}
-
 data class QuestionState(
     val selectedAnswer: String?,
     val isAnswerCorrect: Boolean,
@@ -409,6 +378,7 @@ data class QuestionState(
 @Composable
 fun PauseDialog(
     navController: NavController, // Добавляем NavController
+    viewModel: QuestionViewModel, // ✅ Добавляем ViewModel для управления билетами
     onResume: () -> Unit,
     onGoHome: () -> Unit,
     onAddToFavorites: () -> Unit
@@ -431,6 +401,15 @@ fun PauseDialog(
                 TextButton(onClick = onAddToFavorites) {
                     Text("Добавить в избранное")
                 }
+                TextButton(onClick = {
+                    viewModel.loadRandomTicket() // ✅ Загружаем новый случайный билет
+                    navController.navigate("question_screen/${viewModel.currentQuestionIndex}") {
+                        popUpTo("main_screen") { inclusive = false } // ✅ Удаляем старые экраны
+                    }
+                }) {
+                    Text("Следующий случайный билет(пройти заново не работает)")
+                }
+
             }
         },
         confirmButton = {

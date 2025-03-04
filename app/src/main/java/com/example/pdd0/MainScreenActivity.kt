@@ -16,6 +16,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.*
 
@@ -25,8 +26,9 @@ class MainScreenActivity : ComponentActivity() {
         setContent {
             // Навигация
             val navController = rememberNavController()
+            val questionViewModel: QuestionViewModel = viewModel()
             NavHost(navController = navController, startDestination = "main_screen") {
-                composable("main_screen") { MainScreen(navController) }
+                composable("main_screen") { MainScreen(navController, questionViewModel) }
 //                composable("question_screen") { QuestionScreen(navController) }
 // Это правильный маршрут с передачей параметра индекса
                 composable("question_screen/{questionIndex}") { backStackEntry ->
@@ -38,8 +40,11 @@ class MainScreenActivity : ComponentActivity() {
                 composable("all_questions_screen") {
                     AllQuestionsScreen(navController = navController)
                 }
-
-
+                // ✅ Поддерживаем передачу `correctAnswersCount`
+                composable("result_screen/{correctAnswers}") { backStackEntry ->
+                    val correctAnswers = backStackEntry.arguments?.getString("correctAnswers")?.toIntOrNull() ?: 0
+                    ResultScreen(correctAnswers, 10, navController, questionViewModel)
+                }
             }
         }
     }
@@ -48,7 +53,7 @@ class MainScreenActivity : ComponentActivity() {
 
 
 @Composable
-fun MainScreen(navController: NavController) {
+fun MainScreen(navController: NavController, questionViewModel: QuestionViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -75,7 +80,9 @@ fun MainScreen(navController: NavController) {
         Spacer(modifier = Modifier.height(32.dp))
 
         // Кнопки меню
-        MenuButtons(navController)
+        // ✅ Вот тут просто передаем viewModel (без скобок)
+        MenuButtons(navController, questionViewModel)
+
 
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -85,29 +92,37 @@ fun MainScreen(navController: NavController) {
 }
 
 @Composable
-fun MenuButtons(navController: NavController) {
+fun MenuButtons(navController: NavController, viewModel: QuestionViewModel) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        MenuButton("Случайный билет", navController)
-        MenuButton("Все билеты", navController)
-        MenuButton("Избранные билеты", navController)
-        MenuButton("Экзамен", navController)
+        MenuButton("Случайный билет", navController, viewModel)
+        MenuButton("Все билеты", navController, viewModel)
+        MenuButton("Избранные билеты", navController, viewModel)
+        MenuButton("Экзамен", navController, viewModel)
     }
 }
 
 
 
+
 @Composable
-fun MenuButton(text: String, navController: NavController) {
+fun MenuButton(text: String, navController: NavController, viewModel: QuestionViewModel) {
     Button(
         onClick = {
             when (text) {
-                "Случайный билет" -> navController.navigate("question_screen/0")
+                "Случайный билет" -> {
+                    val randomTicket = (0 until 40).random() * 10 // ✅ Выбираем случайный билет
+                    viewModel.currentTicketStartIndex = randomTicket // ✅ Запоминаем его стартовый индекс
+                    viewModel.currentQuestionIndex = randomTicket // ✅ Ставим первый вопрос случайного билета
+                    navController.navigate("question_screen/$randomTicket")
+                }
+
+
                 "Все билеты" -> navController.navigate("all_questions_screen")
-                "Избранные билеты" -> navController.navigate("favorite_question_screen") // Переход на избранные билеты
-                "Экзамен" -> navController.navigate("exam_screen") // Пример с экраном экзамена
+                "Избранные билеты" -> navController.navigate("favorite_question_screen")
+                "Экзамен" -> navController.navigate("exam_screen")
             }
         },
         modifier = Modifier
@@ -118,6 +133,7 @@ fun MenuButton(text: String, navController: NavController) {
         Text(text = text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
     }
 }
+
 
 
 @Composable
