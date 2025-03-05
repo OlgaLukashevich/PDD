@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -19,35 +20,55 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.*
+import com.example.pdd0.dataStore.FavoriteTicketsManager
+import com.example.pdd0.parser.parseJson
 
 class MainScreenActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             // Навигация
+
             val navController = rememberNavController()
-            val questionViewModel: QuestionViewModel = viewModel()
+
+
+            // ✅ Создаём FavoriteTicketsManager перед использованием ViewModel
+            val favoriteTicketsManager = FavoriteTicketsManager(applicationContext)
+
+            // ✅ Используем фабрику, чтобы ViewModel получил FavoriteTicketsManager
+            val questionViewModel: QuestionViewModel = viewModel(
+                factory = QuestionViewModelFactory(favoriteTicketsManager)
+            )
+            val questionList = parseJson(LocalContext.current)
+
+
             NavHost(navController = navController, startDestination = "main_screen") {
                 composable("main_screen") { MainScreen(navController, questionViewModel) }
 //                composable("question_screen") { QuestionScreen(navController) }
 // Это правильный маршрут с передачей параметра индекса
                 composable("question_screen/{questionIndex}") { backStackEntry ->
                     val questionIndex = backStackEntry.arguments?.getString("questionIndex")?.toIntOrNull() ?: 0
-                    QuestionScreen(navController = navController, questionIndex = questionIndex)
+                    QuestionScreen(navController = navController, questionIndex, questionViewModel)
                 }
-                composable("favorite_question_screen") { FavoriteQuestionScreen(
-                    navController = navController,
-                    questionViewModel = questionViewModel
-                ) }  // Новый экран
+                composable("favorite_question_screen") {
+                    FavoriteQuestionScreen(
+                        navController = navController,
+                        viewModel = questionViewModel // ✅ Передаём правильное имя ViewModel
+                    )
+                }
 
                 composable("all_questions_screen") {
                     AllQuestionsScreen(navController = navController, viewModel = questionViewModel) // ✅ Передаём viewModel
                 }
+                composable("exam_screen") { ExamScreen(navController, questionViewModel) } // ✅ Новый экран
+
                 // ✅ Поддерживаем передачу `correctAnswersCount`
                 composable("result_screen/{correctAnswers}") { backStackEntry ->
                     val correctAnswers = backStackEntry.arguments?.getString("correctAnswers")?.toIntOrNull() ?: 0
                     ResultScreen(correctAnswers, 10, navController, questionViewModel)
                 }
+
+
             }
         }
     }
@@ -126,7 +147,10 @@ fun MenuButton(text: String, navController: NavController, viewModel: QuestionVi
                 "Все билеты" -> {
                     navController.navigate("all_questions_screen") // ✅ Если в NavHost передан viewModel, всё будет работать
                 }                "Избранные билеты" -> navController.navigate("favorite_question_screen")
-                "Экзамен" -> navController.navigate("exam_screen")
+                "Экзамен" -> {
+                    viewModel.loadRandomTicket() // ✅ Грузим случайный билет
+                    navController.navigate("exam_screen")
+                }
             }
         },
         modifier = Modifier
