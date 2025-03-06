@@ -9,7 +9,9 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -45,6 +47,7 @@ class QuestionScreenActivity : ComponentActivity() {
             // Навигация
             val navController = rememberNavController()
             val questionViewModel: QuestionViewModel = viewModel() // Создаём ViewModel
+            val questionList = parseJson(LocalContext.current) // Загружаем список вопросов
 
             NavHost(navController = navController, startDestination = "main_screen") {
                 composable("main_screen") { MainScreen(navController, questionViewModel) }
@@ -65,7 +68,7 @@ class QuestionScreenActivity : ComponentActivity() {
 }
 
 @Composable
-fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: QuestionViewModel = viewModel()) {
+fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: QuestionViewModel) {
         val questionList = parseJson(context = LocalContext.current) // Загрузка вопросов
 
 
@@ -133,8 +136,9 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Выводим изображение вопроса
-            if (!currentQuestion.image.isNullOrEmpty()) {  // Загружаем только если есть путь
+
+            // Выводим изображение вопроса, если оно есть
+            if (!currentQuestion.image.isNullOrEmpty() && currentQuestion.image.trim().isNotEmpty()) {
                 val context = LocalContext.current
 
                 try {
@@ -160,8 +164,8 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
                         .clickable { isImageFullScreen = true }, // Нажатие для увеличения
                     contentScale = ContentScale.Fit
                 )
-
-            } else {
+            }
+            else {
                 Log.d("ImageCheck", "Изображение отсутствует, пропускаем загрузку")
             }
 
@@ -170,10 +174,12 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
 
         // 🔥 Оборачиваем ответы в `Column(Modifier.weight(1f))`, чтобы кнопки не сдвигались
         Column(
-            modifier = Modifier.weight(1f), // Заставляет ответы занимать оставшееся пространство
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState()), // ✅ Добавляем прокрутку
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-        // Ответы
+            // Ответы
         currentQuestion.answers.forEach { answer ->
             val questionState = viewModel.getCurrentQuestionState()
             val isSelected = questionState.selectedAnswer == answer.answer_text
@@ -367,15 +373,15 @@ fun QuestionNavigationPanel(navController: NavController, viewModel: QuestionVie
                 navController.navigate("main_screen") // Переход на главный экран
             },
             onAddToFavorites = {
-                val wasAdded = viewModel.toggleFavoriteTicket(viewModel.currentQuestionIndex)
-                if (wasAdded) {
-                    Toast.makeText(context, "Билет добавлен в избранное", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(context, "Билет удален из избранного", Toast.LENGTH_SHORT).show()
-                }
-                showPauseDialog = false
-                isPaused = false
-            }
+                viewModel.toggleFavoriteTicket(viewModel.currentQuestionIndex.toString()) // ✅ Исправлено
+//                val message = if (viewModel.isTicketFavorite) {
+//                    "Билет добавлен в избранное"
+//                } else {
+//                    "Билет удален из избранного"
+//                }
+  //              Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            },
+            currentTicketNumber = viewModel.currentQuestionIndex.toString()
         )
     }
 }
@@ -395,12 +401,15 @@ fun PauseDialog(
     viewModel: QuestionViewModel, // ✅ Добавляем ViewModel для управления билетами
     onResume: () -> Unit,
     onGoHome: () -> Unit,
-    onAddToFavorites: () -> Unit
+    onAddToFavorites: () -> Unit,
+    currentTicketNumber: String // Номер текущего билета
+
 ) {
 
 
     val context = LocalContext.current
-    val isFavorite = viewModel.isTicketFavorite(viewModel.currentQuestionIndex)
+    val favoriteTickets by viewModel.favoriteTickets.collectAsState() // ✅ Исправлено!
+    val isFavorite = favoriteTickets.contains(currentTicketNumber)
 
 
     AlertDialog(
@@ -420,16 +429,13 @@ fun PauseDialog(
                 }
                 // Кнопка добавления в избранное
                 TextButton(onClick = {
-                    val wasAdded = viewModel.toggleFavoriteTicket(viewModel.currentQuestionIndex)
-                    if (wasAdded) {
-                        Toast.makeText(context, "Билет добавлен в избранное", Toast.LENGTH_SHORT).show()
-                    } else {
-                        Toast.makeText(context, "Билет удален из избранного", Toast.LENGTH_SHORT).show()
-                    }
-                    onResume() // Закрываем диалог
+                    Log.d("PauseDialog", "Добавляю билет в избранное: $currentTicketNumber") // ✅ Логируем
+                    onAddToFavorites()
+                    onResume()
                 }) {
-                    Text(if (isFavorite) "Добавлен в избранное" else "Добавить в избранное")
+                    Text(if (isFavorite) "Удалить из избранного" else "Добавить в избранное")
                 }
+
                 TextButton(onClick = {
                     viewModel.loadRandomTicket()
                     navController.navigate("question_screen/${viewModel.currentQuestionIndex}") {
