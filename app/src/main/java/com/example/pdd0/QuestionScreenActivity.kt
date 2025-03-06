@@ -89,8 +89,6 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
         Text(text = "Ошибка загрузки вопроса", fontSize = 24.sp)
         return
     }
-
-
     // ✅ Получаем количество правильных ответов из ViewModel
     val correctAnswersCount = viewModel.correctAnswersCount
 
@@ -101,8 +99,6 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
         }
         return
     }
-
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -135,8 +131,6 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
             )
 
             Spacer(modifier = Modifier.height(16.dp))
-
-
             // Выводим изображение вопроса, если оно есть
             if (!currentQuestion.image.isNullOrEmpty() && currentQuestion.image.trim().isNotEmpty()) {
                 val context = LocalContext.current
@@ -169,7 +163,6 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
                 Log.d("ImageCheck", "Изображение отсутствует, пропускаем загрузку")
             }
 
-
         }
 
         // 🔥 Оборачиваем ответы в `Column(Modifier.weight(1f))`, чтобы кнопки не сдвигались
@@ -198,12 +191,6 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
             )
         }
         }
-
-
-
-
-
-
         Spacer(modifier = Modifier.height(32.dp))
 
         // 🔥 Фиксируем кнопки "Назад" и "Вперед" внизу экрана

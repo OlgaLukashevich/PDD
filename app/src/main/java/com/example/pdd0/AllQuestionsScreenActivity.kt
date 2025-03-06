@@ -14,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,6 +29,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.*
 import com.example.pdd0.dataClass.Question
+import com.example.pdd0.dataStore.FavoriteTicketsManager
 import com.example.pdd0.parser.parseJson
 
 class AllQuestionsScreenActivity : ComponentActivity() {
@@ -35,15 +37,20 @@ class AllQuestionsScreenActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             val navController = rememberNavController()
-            val questionViewModel: QuestionViewModel = viewModel() // ✅ Создаём ViewModel
+            // ✅ Создаём FavoriteTicketsManager
+            val favoriteTicketsManager = FavoriteTicketsManager(applicationContext)
 
+            // ✅ Создаём ViewModel через фабрику
+            val questionViewModel: QuestionViewModel = viewModel(
+                factory = QuestionViewModelFactory(favoriteTicketsManager)
+            )
             NavHost(navController = navController, startDestination = "all_questions_screen") {
                 composable("all_questions_screen") {
                     AllQuestionsScreen(navController, questionViewModel)
                 }
                 composable("question_screen/{ticketNumber}") { backStackEntry ->
                     val ticketNumber = backStackEntry.arguments?.getString("ticketNumber")?.toIntOrNull() ?: 1
-                    QuestionScreen(navController, ticketNumber) // ✅ Передаём как Int
+                    QuestionScreen(navController, ticketNumber, questionViewModel) // ✅ Передаём ViewModel
                 }
 
 
@@ -95,9 +102,11 @@ fun AllQuestionsScreen(navController: NavController, viewModel: QuestionViewMode
 }
 
 
-
 @Composable
 fun TicketItem(ticketNumber: String, questionList: List<Question>, navController: NavController, viewModel: QuestionViewModel) {
+    val favoriteTickets by viewModel.favoriteTickets.collectAsState() // ✅ Следим за избранными билетами
+    val isFavorite = favoriteTickets.contains(ticketNumber) // ✅ Проверяем статус билета
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -119,11 +128,19 @@ fun TicketItem(ticketNumber: String, questionList: List<Question>, navController
             fontSize = 18.sp,
             modifier = Modifier.weight(1f)
         )
-        Icon(
-            imageVector = Icons.Filled.StarBorder,
-            contentDescription = "Favorite",
-            tint = Color.Gray
-        )
+
+        // ✅ Кликабельная звезда для добавления/удаления из избранного
+        IconButton(
+            onClick = {
+                Log.d("TicketItem", "Переключаю статус избранного для билета: $ticketNumber")
+                viewModel.toggleFavoriteTicket(ticketNumber)
+            }
+        ) {
+            Icon(
+                imageVector = if (isFavorite) Icons.Filled.Star else Icons.Filled.StarBorder, // ✅ Закрашенная или пустая звезда
+                contentDescription = if (isFavorite) "Удалить из избранного" else "Добавить в избранное",
+                tint = if (isFavorite) Color.Yellow else Color.Gray // ✅ Цвет изменяется
+            )
+        }
     }
 }
-

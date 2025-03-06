@@ -3,9 +3,16 @@ package com.example.pdd0
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.compose.runtime.*
+import androidx.lifecycle.viewModelScope
+import com.example.pdd0.dataStore.FavoriteTicketsManager
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlin.random.Random
 
-class QuestionViewModel : ViewModel() {
+//class QuestionViewModel : ViewModel() {
+class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManager) : ViewModel() {
     var currentQuestionIndex by mutableStateOf(0)
     var isTestFinished by mutableStateOf(false)
     var questionStates = mutableStateMapOf<Int, QuestionState>()
@@ -76,11 +83,6 @@ class QuestionViewModel : ViewModel() {
         isTestFinished = false
     }
 
-
-
-
-
-
     // 🔥 Метод для перехода к следующему вопросу в рамках текущего билета
     fun moveToNextQuestion() {
         val ticketStartIndex = (currentQuestionIndex / 10) * 10 // Первый вопрос текущего билета
@@ -88,10 +90,6 @@ class QuestionViewModel : ViewModel() {
             currentQuestionIndex++
         }
     }
-
-
-
-
 
     // ✅ Проверяем, все ли вопросы в текущем билете отвечены
     fun allQuestionsAnswered(): Boolean {
@@ -107,14 +105,6 @@ class QuestionViewModel : ViewModel() {
     }
 
 
-//    fun loadSpecificTicket(ticketIndex: Int) {
-//        questionStates.clear() // ✅ Очищаем предыдущие ответы
-//        currentTicketStartIndex = ticketIndex // ✅ Сохраняем первый вопрос этого билета
-//        currentQuestionIndex = ticketIndex
-//        isTestFinished = false
-//    }
-
-
     fun loadSpecificTicket(ticketIndex: Int) {
         questionStates.clear()
         correctAnswersCount = 0
@@ -124,27 +114,46 @@ class QuestionViewModel : ViewModel() {
         currentQuestionIndex = ticketIndex
     }
 
+    // Используем FavoriteTicketsManager для управления избранными билетами
+    private val _favoriteTickets = MutableStateFlow<Set<String>>(emptySet())
+    val favoriteTickets: StateFlow<Set<String>> get() = _favoriteTickets
 
-
-    // 📌 Список избранных билетов
-    var favoriteTickets = mutableStateListOf<Int>()
-
-    // ✅ Метод для добавления/удаления билета в избранное
-    fun toggleFavoriteTicket(ticketIndex: Int): Boolean {
-        return if (favoriteTickets.contains(ticketIndex)) {
-            favoriteTickets.remove(ticketIndex)
-            isTicketFavorite = false
-            false // Билет удален из избранного
-        } else {
-            favoriteTickets.add(ticketIndex)
-            isTicketFavorite = true
-            true // Билет добавлен в избранное
+    init {
+        // Загружаем избранные билеты при инициализации ViewModel
+        viewModelScope.launch {
+            favoriteTicketsManager.favoriteTickets.collect { favorites ->
+                _favoriteTickets.value = favorites
+            }
         }
     }
 
-    // ✅ Проверка, является ли билет избранным
-    fun isTicketFavorite(ticketIndex: Int): Boolean {
-        return favoriteTickets.contains(ticketIndex)
+    fun toggleFavoriteTicket(ticketNumber: String) {
+        viewModelScope.launch {
+            val isCurrentlyFavorite = _favoriteTickets.value.contains(ticketNumber)
+
+            if (isCurrentlyFavorite) {
+                favoriteTicketsManager.removeFavoriteTicket(ticketNumber)
+            } else {
+                favoriteTicketsManager.addFavoriteTicket(ticketNumber)
+            }
+
+            // ✅ Принудительно обновляем `favoriteTickets`, чтобы UI обновился
+            _favoriteTickets.value = _favoriteTickets.value.toMutableSet().apply {
+                if (isCurrentlyFavorite) remove(ticketNumber) else add(ticketNumber)
+            }
+
+            // Обновляем состояние для UI
+            isTicketFavorite = !isCurrentlyFavorite
+        }
     }
+
+
+
+
+
+
+
+
+
 
 }
