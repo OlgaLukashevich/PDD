@@ -8,18 +8,29 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.pdd0.parser.parseJson
 
 
 @Composable
 fun ResultScreen(correctAnswersCount: Int, totalQuestions: Int, navController: NavController, viewModel: QuestionViewModel) {
     val resultText = "$correctAnswersCount/10"
+    val context = LocalContext.current
+    val questionList = parseJson(context) // ✅ Загружаем список всех вопросов
+    val currentTicketNumber = viewModel.getCurrentTicketNumber(questionList) // ✅ Определяем номер билета
+
+    val favoriteTickets by viewModel.favoriteTickets.collectAsState() // ✅ Следим за избранными билетами
+    val isFavorite = favoriteTickets.contains(currentTicketNumber) // ✅ Проверяем, в избранном ли билет
+
 
     Column(
         modifier = Modifier
@@ -58,10 +69,13 @@ fun ResultScreen(correctAnswersCount: Int, totalQuestions: Int, navController: N
 
 
         Spacer(modifier = Modifier.height(16.dp))
-        // Кнопка добавить в избранное
-        Button(onClick = {navController.navigate("favorite_question_screen")}) {
-            Text("Добавить в избранное")
+        // ✅ Кнопка "Добавить в избранное"
+        Button(onClick = {
+            viewModel.toggleFavoriteTicket(currentTicketNumber) // ✅ Передаём правильный номер билета
+        }) {
+            Text(if (isFavorite) "Удалить из избранного" else "Добавить в избранное")
         }
+
         Spacer(modifier = Modifier.height(16.dp))
         // 🔥 Кнопка "Следующий билет"
         Button(onClick = {

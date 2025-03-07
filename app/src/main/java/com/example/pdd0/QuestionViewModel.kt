@@ -4,6 +4,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.compose.runtime.*
 import androidx.lifecycle.viewModelScope
+import com.example.pdd0.dataClass.Question
+import com.example.pdd0.dataClass.QuestionState
 import com.example.pdd0.dataStore.FavoriteTicketsManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -11,7 +13,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 
-//class QuestionViewModel : ViewModel() {
 class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManager) : ViewModel() {
     var currentQuestionIndex by mutableStateOf(0)
     var isTestFinished by mutableStateOf(false)
@@ -113,6 +114,14 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
         lastTicketStartIndex = ticketIndex // ✅ Запоминаем первый вопрос билета
         currentQuestionIndex = ticketIndex
     }
+
+
+    fun getCurrentTicketNumber(questionList: List<Question>): String {
+        val currentQuestion = questionList.getOrNull(currentQuestionIndex)
+        return currentQuestion?.ticket_number ?: "Билет ?"
+    }
+
+
 
     // Используем FavoriteTicketsManager для управления избранными билетами
     private val _favoriteTickets = MutableStateFlow<Set<String>>(emptySet())

@@ -5,23 +5,23 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.*
+import com.example.pdd0.dataClass.Question
 import com.example.pdd0.dataStore.FavoriteTicketsManager
 import com.example.pdd0.parser.parseJson
+import com.example.pdd0.utils.SocialIcons
+
 
 class MainScreenActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -43,7 +43,9 @@ class MainScreenActivity : ComponentActivity() {
 
 
             NavHost(navController = navController, startDestination = "main_screen") {
-                composable("main_screen") { MainScreen(navController, questionViewModel) }
+                composable("main_screen") {
+                    MainScreen(navController, questionViewModel, questionList)
+                }
 //                composable("question_screen") { QuestionScreen(navController) }
 // Это правильный маршрут с передачей параметра индекса
                 composable("question_screen/{questionIndex}") { backStackEntry ->
@@ -58,7 +60,7 @@ class MainScreenActivity : ComponentActivity() {
                 }
 
                 composable("all_questions_screen") {
-                    AllQuestionsScreen(navController = navController, viewModel = questionViewModel) // ✅ Передаём viewModel
+                    AllQuestionsScreen(navController = navController, questionViewModel, questionList) // ✅ Передаём viewModel
                 }
                 composable("exam_screen") { ExamScreen(navController, questionViewModel) } // ✅ Новый экран
 
@@ -77,17 +79,16 @@ class MainScreenActivity : ComponentActivity() {
 
 
 @Composable
-fun MainScreen(navController: NavController, questionViewModel: QuestionViewModel) {
+fun MainScreen(navController: NavController, questionViewModel: QuestionViewModel, questionList: List<Question>) {
+   // var filteredTickets by remember { mutableStateOf<List<String>>(questionList.map { it.ticket_number }) } // ✅ Теперь изначально содержит все билеты
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Поиск
-        SearchBar()
-
-        Spacer(modifier = Modifier.height(32.dp))
+         Spacer(modifier = Modifier.height(32.dp))
 
         // Заголовок
         Text(
@@ -104,9 +105,7 @@ fun MainScreen(navController: NavController, questionViewModel: QuestionViewMode
         Spacer(modifier = Modifier.height(32.dp))
 
         // Кнопки меню
-        // ✅ Вот тут просто передаем viewModel (без скобок)
         MenuButtons(navController, questionViewModel)
-
 
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -127,9 +126,6 @@ fun MenuButtons(navController: NavController, viewModel: QuestionViewModel) {
         MenuButton("Экзамен", navController, viewModel)
     }
 }
-
-
-
 
 @Composable
 fun MenuButton(text: String, navController: NavController, viewModel: QuestionViewModel) {
@@ -164,55 +160,4 @@ fun MenuButton(text: String, navController: NavController, viewModel: QuestionVi
 
 
 
-@Composable
-fun SearchBar() {
-    var text by remember { mutableStateOf("") }
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        OutlinedTextField(
-            value = text,
-            onValueChange = { text = it },
-            label = { Text("Поиск билета") },
-            modifier = Modifier.weight(1f),
-            leadingIcon = {
-                Icon(imageVector = Icons.Default.Search, contentDescription = "Search Icon")
-            }
-        )
-    }
-}
-
-
-
-
-@Composable
-fun SocialIcons() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            painter = painterResource(id = android.R.drawable.ic_menu_camera),
-            contentDescription = "Icon 1"
-        )
-        Icon(
-            painter = painterResource(id = android.R.drawable.ic_menu_camera),
-            contentDescription = "Icon 2"
-        )
-        Icon(
-            painter = painterResource(id = android.R.drawable.ic_menu_camera),
-            contentDescription = "Icon 3"
-        )
-        Icon(
-            painter = painterResource(id = android.R.drawable.ic_menu_camera),
-            contentDescription = "Icon 4"
-        )
-    }
-}

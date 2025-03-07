@@ -14,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.runtime.*
@@ -31,6 +32,8 @@ import androidx.navigation.compose.*
 import com.example.pdd0.dataClass.Question
 import com.example.pdd0.dataStore.FavoriteTicketsManager
 import com.example.pdd0.parser.parseJson
+import com.example.pdd0.utils.SearchBar
+
 
 class AllQuestionsScreenActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,6 +42,8 @@ class AllQuestionsScreenActivity : ComponentActivity() {
             val navController = rememberNavController()
             // ✅ Создаём FavoriteTicketsManager
             val favoriteTicketsManager = FavoriteTicketsManager(applicationContext)
+            val questionList = parseJson(LocalContext.current)
+
 
             // ✅ Создаём ViewModel через фабрику
             val questionViewModel: QuestionViewModel = viewModel(
@@ -46,7 +51,7 @@ class AllQuestionsScreenActivity : ComponentActivity() {
             )
             NavHost(navController = navController, startDestination = "all_questions_screen") {
                 composable("all_questions_screen") {
-                    AllQuestionsScreen(navController, questionViewModel)
+                    AllQuestionsScreen(navController, questionViewModel, questionList)
                 }
                 composable("question_screen/{ticketNumber}") { backStackEntry ->
                     val ticketNumber = backStackEntry.arguments?.getString("ticketNumber")?.toIntOrNull() ?: 1
@@ -63,19 +68,9 @@ class AllQuestionsScreenActivity : ComponentActivity() {
 
 
 @Composable
-fun AllQuestionsScreen(navController: NavController, viewModel: QuestionViewModel) {
-    var ticketList by remember { mutableStateOf<List<Question>>(emptyList()) }
+fun AllQuestionsScreen(navController: NavController, viewModel: QuestionViewModel, questionList: List<Question>) {
     val context = LocalContext.current
-
-    // ✅ Загружаем вопросы один раз
-    LaunchedEffect(Unit) {
-        ticketList = parseJson(context)
-    }
-
-    val uniqueTickets = ticketList
-        .groupBy { it.ticket_number }
-        .keys.toList()
-        .sortedBy { it.substringAfter("Билет ").toIntOrNull() ?: Int.MAX_VALUE }
+    var filteredTickets by remember { mutableStateOf(questionList.map { it.ticket_number }) } // ✅ Теперь сразу содержит все билеты
 
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp)
@@ -91,16 +86,24 @@ fun AllQuestionsScreen(navController: NavController, viewModel: QuestionViewMode
             Text(text = "Билеты", fontSize = 24.sp, fontWeight = FontWeight.Bold)
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
+        // ✅ Добавляем ПОИСК по билетам
+        SearchBar(
+            ticketList = questionList.map { it.ticket_number }.distinct(),
+            onSearchResults = { filteredTickets = it } // ✅ Обновляем список билетов
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // ✅ Отображаем найденные билеты
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(uniqueTickets) { ticketNumber ->
-                TicketItem(ticketNumber, ticketList, navController, viewModel) // ✅ Передаём список вопросов
+            items(filteredTickets) { ticketNumber ->
+                TicketItem(ticketNumber, questionList, navController, viewModel)
             }
         }
     }
 }
-
 
 @Composable
 fun TicketItem(ticketNumber: String, questionList: List<Question>, navController: NavController, viewModel: QuestionViewModel) {
@@ -144,3 +147,5 @@ fun TicketItem(ticketNumber: String, questionList: List<Question>, navController
         }
     }
 }
+
+

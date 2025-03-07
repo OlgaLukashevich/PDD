@@ -2,7 +2,6 @@ package com.example.pdd0
 
 import android.os.Bundle
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -24,8 +23,6 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -38,7 +35,10 @@ import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.example.pdd0.parser.parseJson
-import kotlinx.coroutines.delay
+import com.example.pdd0.utils.QuestionNavigationPanel
+import com.example.pdd0.utils.AnswerButton
+
+
 
 class QuestionScreenActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,14 +50,14 @@ class QuestionScreenActivity : ComponentActivity() {
             val questionList = parseJson(LocalContext.current) // Загружаем список вопросов
 
             NavHost(navController = navController, startDestination = "main_screen") {
-                composable("main_screen") { MainScreen(navController, questionViewModel) }
+                composable("main_screen") { MainScreen(navController, questionViewModel,questionList) }
                 composable("question_screen/{questionIndex}") { backStackEntry ->
                 // Извлекаем индекс вопроса из аргументов
                     val questionIndex = backStackEntry.arguments?.getString("questionIndex")?.toIntOrNull() ?: 1
                     QuestionScreen(navController, questionIndex - 1, questionViewModel) // Передаем ViewModel
                 }
                 composable("all_questions_screen") {
-                    AllQuestionsScreen(navController = navController, viewModel = questionViewModel) // ✅ Передаём viewModel
+                    AllQuestionsScreen(navController = navController, questionViewModel,questionList) // ✅ Передаём viewModel
                 }
                 composable("favorite_question_screen") {
                     FavoriteQuestionScreen(navController, questionViewModel)
@@ -114,6 +114,8 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
         Spacer(modifier = Modifier.height(16.dp))
         // Панель навигации
         QuestionNavigationPanel(navController, viewModel)
+        //QuestionNavigationPanel(navController, viewModel, screenRoute = "exam_screen")
+
         Spacer(modifier = Modifier.height(22.dp))
 
         Column(
@@ -285,190 +287,3 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
 }
 
 
-
-@Composable
-fun QuestionNavigationPanel(navController: NavController, viewModel: QuestionViewModel) {
-    var isPaused by remember { mutableStateOf(false) } // Отслеживаем состояние паузы
-    var showPauseDialog by remember { mutableStateOf(false) }
-    val context = LocalContext.current // Получаем контекст
-
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Кнопка Play/Pause
-        IconButton(onClick = {
-            isPaused = !isPaused // Переключаем состояние
-            showPauseDialog = isPaused // Показываем диалог только при нажатии на паузу
-        }) {
-            Icon(
-                imageVector = if (isPaused) Icons.Filled.PlayArrow else Icons.Filled.Pause,
-                contentDescription = if (isPaused) "Play" else "Pause"
-            )
-        }
-
-        val baseIndex = (viewModel.currentQuestionIndex / 10) * 10 // Определяем первый вопрос текущего билета
-
-        ( 0..9).forEach { offset ->
-            val questionIndex = baseIndex + offset
-            val questionState = viewModel.questionStates[questionIndex]
-
-            val color = when {
-                viewModel.currentQuestionIndex == questionIndex -> Color.Black  // Текущий вопрос
-                questionState?.selectedAnswer == null -> Color.Gray  // Не отвечен
-                questionState.isAnswerCorrect -> Color.Green        // Правильный ответ
-                else -> Color.Red                                   // Неправильный ответ
-            }
-
-            Text(
-                text = "${offset + 1}",
-                fontSize = 18.sp,
-                modifier = Modifier
-                    .padding(4.dp)
-                    .clickable {
-                        viewModel.saveCurrentQuestionState()
-                        if (viewModel.currentQuestionIndex != questionIndex) {
-                            viewModel.currentQuestionIndex = questionIndex
-                            viewModel.loadQuestionState()
-                        }
-
-                        navController.navigate("question_screen/$questionIndex") {
-                            launchSingleTop = true
-                        }
-                    },
-                color = color,
-                fontWeight = if (viewModel.currentQuestionIndex == questionIndex) FontWeight.Bold else FontWeight.Normal
-            )
-        }
-    }
-
-
-    // Диалог с вариантами действий
-    if (showPauseDialog) {
-
-        PauseDialog(
-            navController = navController, // Передаем navController
-            viewModel = viewModel, // ✅ Передаём ViewModel для кнопки "Следующий случайный билет"
-            onResume = {
-                showPauseDialog = false
-                isPaused = false // Автоматически меняем иконку на паузу при закрытии диалога
-            },
-            onGoHome = {
-                showPauseDialog = false
-                isPaused = false // Возвращаем плей при переходе на главную
-                navController.navigate("main_screen") // Переход на главный экран
-            },
-            onAddToFavorites = {
-                viewModel.toggleFavoriteTicket(viewModel.currentQuestionIndex.toString()) // ✅ Исправлено
-//                val message = if (viewModel.isTicketFavorite) {
-//                    "Билет добавлен в избранное"
-//                } else {
-//                    "Билет удален из избранного"
-//                }
-  //              Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-            },
-            currentTicketNumber = viewModel.currentQuestionIndex.toString()
-        )
-    }
-}
-
-
-
-data class QuestionState(
-    val selectedAnswer: String?,
-    val isAnswerCorrect: Boolean,
-    val isAnswerLocked: Boolean
-)
-
-@Composable
-fun PauseDialog(
-
-    navController: NavController, // Добавляем NavController
-    viewModel: QuestionViewModel, // ✅ Добавляем ViewModel для управления билетами
-    onResume: () -> Unit,
-    onGoHome: () -> Unit,
-    onAddToFavorites: () -> Unit,
-    currentTicketNumber: String // Номер текущего билета
-
-) {
-
-
-    val context = LocalContext.current
-    val favoriteTickets by viewModel.favoriteTickets.collectAsState() // ✅ Исправлено!
-    val isFavorite = favoriteTickets.contains(currentTicketNumber)
-
-
-    AlertDialog(
-        onDismissRequest = {},
-        title = {
-            Text(text = "Пауза")
-        },
-        text = {
-            Column {
-                TextButton(onClick = onResume) {
-                    Text("Продолжить")
-                }
-                TextButton(onClick = {
-                    navController.navigate("main_screen") // Переход на главный экран
-                }) {
-                    Text("На главную")
-                }
-                // Кнопка добавления в избранное
-                TextButton(onClick = {
-                    Log.d("PauseDialog", "Добавляю билет в избранное: $currentTicketNumber") // ✅ Логируем
-                    onAddToFavorites()
-                    onResume()
-                }) {
-                    Text(if (isFavorite) "Удалить из избранного" else "Добавить в избранное")
-                }
-
-                TextButton(onClick = {
-                    viewModel.loadRandomTicket()
-                    navController.navigate("question_screen/${viewModel.currentQuestionIndex}") {
-                        popUpTo("main_screen") { inclusive = false }
-                    }
-                }) {
-                    Text("Следующий случайный билет(пройти заново не работает)")
-                }
-
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onResume) {
-                Text("Закрыть")
-            }
-        }
-    )
-}
-
-@Composable
-fun AnswerButton(
-    answerText: String,
-    isCorrect: Boolean,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    isAnswerCorrect: Boolean
-) {
-    val backgroundColor = when {
-        isSelected && isAnswerCorrect -> Color.Green
-        isSelected && !isAnswerCorrect -> Color.Red
-        else -> Color.Gray
-    }
-
-    Button(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        shape = RoundedCornerShape(8.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = backgroundColor) // Исправили на containerColor
-    ) {
-        Text(
-            text = answerText,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.White
-        )
-    }
-}

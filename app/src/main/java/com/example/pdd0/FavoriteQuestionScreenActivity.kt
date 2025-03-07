@@ -126,34 +126,3 @@ fun FavoriteTicketItem(ticketNumber: String, questionList: List<Question>, navCo
 }
 
 
-//@Composable
-//fun FavoriteTicketItem(ticketNumber: String, questionList: List<Question>, navController: NavController, viewModel: QuestionViewModel) {
-//    Row(
-//        modifier = Modifier
-//            .fillMaxWidth()
-//            .padding(vertical = 8.dp, horizontal = 16.dp)
-//            .clickable {
-//                // ✅ Находим первый вопрос билета
-//                val firstQuestionIndex = questionList.indexOfFirst { it.ticket_number == ticketNumber }
-//
-//                if (firstQuestionIndex != -1) {
-//                    Log.d("FavoriteTicketItem", "Открываю избранный билет: $ticketNumber, Первый вопрос: $firstQuestionIndex")
-//                    navController.navigate("question_screen/$firstQuestionIndex") // ✅ Переход к первому вопросу
-//                } else {
-//                    Log.e("FavoriteTicketItem", "Ошибка: Вопросы для билета $ticketNumber не найдены")
-//                }
-//            },
-//        verticalAlignment = Alignment.CenterVertically
-//    ) {
-//        Text(
-//            text = ticketNumber,
-//            fontSize = 18.sp,
-//            modifier = Modifier.weight(1f)
-//        )
-//        Icon(
-//            imageVector = Icons.Filled.Star,
-//            contentDescription = "Favorite",
-//            tint = Color.Yellow
-//        )
-//    }
-//}
