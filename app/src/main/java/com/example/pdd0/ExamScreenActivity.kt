@@ -117,6 +117,7 @@ fun ExamScreen(navController: NavController, questionIndex: Int, viewModel: Ques
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+
         // Заголовок: вместо номера билета отображаем таймер
         Text(
             text = "Время: ${formatTime(timeLeft)}",
@@ -183,6 +184,7 @@ fun ExamScreen(navController: NavController, questionIndex: Int, viewModel: Ques
         }
 
 
+
         Spacer(modifier = Modifier.height(16.dp))
 
         // Навигация "Назад" и "Вперёд"
@@ -226,6 +228,24 @@ fun ExamScreen(navController: NavController, questionIndex: Int, viewModel: Ques
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // ✅ Кнопка "Выйти в меню"
+        Button(
+            onClick = {
+                navController.navigate("main_screen") {
+                    popUpTo("main_screen") { inclusive = true } // Удаляем все экраны сверху
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)
+        ) {
+            Text(text = "Выйти в меню", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        }
+
     }
 }
 
