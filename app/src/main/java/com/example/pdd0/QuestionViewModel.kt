@@ -19,6 +19,10 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
     var questionStates = mutableStateMapOf<Int, QuestionState>()
     var correctAnswersCount by mutableStateOf(0) // ✅ Счётчик правильных ответов
     var currentTicketStartIndex by mutableStateOf(0) // ✅ Сохраняем первый вопрос текущего билета
+    // ✅ Добавляем отдельный счетчик ошибок для экзамена
+    var examWrongAnswersCount by mutableStateOf(0)
+        private set
+
 
 
    // var showFavoriteMessage by mutableStateOf(false)
@@ -123,6 +127,7 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
 
 
 
+
     // Используем FavoriteTicketsManager для управления избранными билетами
     private val _favoriteTickets = MutableStateFlow<Set<String>>(emptySet())
     val favoriteTickets: StateFlow<Set<String>> get() = _favoriteTickets
@@ -160,6 +165,19 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
 
 
 
+    // ✅ Функция для увеличения количества ошибок в режиме экзамена
+    fun incrementExamWrongAnswers() {
+        examWrongAnswersCount++
+    }
+
+    // ✅ Функция сброса ошибок перед началом экзамена
+    fun resetExam() {
+        examWrongAnswersCount = 0
+        correctAnswersCount = 0
+        isTestFinished = false
+        questionStates.clear()
+        currentQuestionIndex = 0
+    }
 
 
 

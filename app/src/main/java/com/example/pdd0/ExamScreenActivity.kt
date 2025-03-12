@@ -1,16 +1,13 @@
 package com.example.pdd0
 
+import android.net.Uri
 import android.os.Bundle
-import android.util.Log
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -23,13 +20,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
@@ -37,7 +30,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
-import com.example.pdd0.dataClass.Question
 import com.example.pdd0.parser.parseJson
 import com.example.pdd0.utils.AnswerButton
 import com.example.pdd0.utils.QuestionNavigationPanel
@@ -77,7 +69,7 @@ class ExamScreenActivity : ComponentActivity() {
 fun ExamScreen(navController: NavController, questionIndex: Int, viewModel: QuestionViewModel) {
     val questionList = parseJson(context = LocalContext.current) // Загружаем вопросы
 
-    // ✅ Таймер на 15 минут
+    // Таймер (3 минуты)
     val timerMillis = 3 * 60 * 1000L
     var timeLeft by remember { mutableStateOf(timerMillis) }
     var isTimeUp by remember { mutableStateOf(false) }
@@ -94,15 +86,15 @@ fun ExamScreen(navController: NavController, questionIndex: Int, viewModel: Ques
         }
     }
 
-    // Если время вышло → переходим на экран результатов
-    if (isTimeUp) {
+    // Если время вышло или допущено 2 ошибки → завершаем тест
+    if (isTimeUp || viewModel.examWrongAnswersCount >= 2) {
         LaunchedEffect(Unit) {
             navController.navigate("result_screen/${viewModel.correctAnswersCount}")
         }
         return
     }
 
-    // При изменении индекса загружаем состояние вопроса
+    // Загружаем вопрос
     LaunchedEffect(questionIndex) {
         if (viewModel.currentQuestionIndex != questionIndex) {
             viewModel.saveCurrentQuestionState()
@@ -117,15 +109,7 @@ fun ExamScreen(navController: NavController, questionIndex: Int, viewModel: Ques
         return
     }
 
-    val correctAnswersCount = viewModel.correctAnswersCount
-
-    // ✅ Если все вопросы пройдены → переходим на результат
-    if (viewModel.isTestFinished) {
-        LaunchedEffect(Unit) {
-            navController.navigate("result_screen/$correctAnswersCount")
-        }
-        return
-    }
+    var isImageFullScreen by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -133,9 +117,9 @@ fun ExamScreen(navController: NavController, questionIndex: Int, viewModel: Ques
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // ✅ Отображение таймера
+        // Заголовок: вместо номера билета отображаем таймер
         Text(
-            text = formatTime(timeLeft),
+            text = "Время: ${formatTime(timeLeft)}",
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
             color = if (timeLeft < 60_000L) Color.Red else Color.Black
@@ -143,15 +127,31 @@ fun ExamScreen(navController: NavController, questionIndex: Int, viewModel: Ques
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // ✅ Панель навигации
-        QuestionNavigationPanel(navController, viewModel)
-
-        Spacer(modifier = Modifier.height(22.dp))
-
-
+        // Вопрос и варианты ответов
+        Text(text = currentQuestion.question, fontSize = 20.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(16.dp))
 
-        // ✅ Отображение вариантов ответов
+        // ✅ Выводим изображение вопроса, если оно есть
+        if (!currentQuestion.image.isNullOrEmpty() && currentQuestion.image.trim().isNotEmpty()) {
+            val context = LocalContext.current
+            val imagePainter = rememberAsyncImagePainter(
+                model = ImageRequest.Builder(context)
+                    .data(Uri.parse("file:///android_asset/${currentQuestion.image}"))
+                    .build()
+            )
+
+            Image(
+                painter = imagePainter,
+                contentDescription = "Image for question",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .padding(16.dp)
+                    .clickable { isImageFullScreen = true },
+                contentScale = ContentScale.Fit
+            )
+        }
+
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -170,6 +170,11 @@ fun ExamScreen(navController: NavController, questionIndex: Int, viewModel: Ques
                     onClick = {
                         if (!questionState.isAnswerLocked) {
                             viewModel.saveAnswer(answer.answer_text, answer.is_correct)
+
+                            // ✅ Отдельный метод для учета ошибок в экзамене
+                            if (!answer.is_correct) {
+                                viewModel.incrementExamWrongAnswers()
+                            }
                         }
                     },
                     isAnswerCorrect = isCorrect
@@ -177,16 +182,16 @@ fun ExamScreen(navController: NavController, questionIndex: Int, viewModel: Ques
             }
         }
 
+
         Spacer(modifier = Modifier.height(16.dp))
 
-        // ✅ Навигация "Назад" и "Вперёд"
+        // Навигация "Назад" и "Вперёд"
         Row(
             horizontalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
         ) {
-            // 🔙 Кнопка "Назад"
             IconButton(
                 onClick = {
                     if (viewModel.currentQuestionIndex > 0) {
@@ -199,7 +204,6 @@ fun ExamScreen(navController: NavController, questionIndex: Int, viewModel: Ques
                 Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Previous")
             }
 
-            // ✅ Если тест завершён → кнопка завершения
             if (viewModel.allQuestionsAnswered()) {
                 IconButton(
                     onClick = {
@@ -209,7 +213,6 @@ fun ExamScreen(navController: NavController, questionIndex: Int, viewModel: Ques
                     Icon(imageVector = Icons.Filled.Check, contentDescription = "Finish")
                 }
             } else {
-                // 🔜 Кнопка "Вперёд"
                 IconButton(
                     onClick = {
                         viewModel.saveCurrentQuestionState()

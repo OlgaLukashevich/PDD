@@ -62,7 +62,12 @@ class MainScreenActivity : ComponentActivity() {
                 composable("all_questions_screen") {
                     AllQuestionsScreen(navController = navController, questionViewModel, questionList) // ✅ Передаём viewModel
                 }
-                composable("exam_screen") { ExamScreen(navController, questionViewModel) } // ✅ Новый экран
+
+                composable("exam_screen/{questionIndex}") { backStackEntry ->
+                    val questionIndex = backStackEntry.arguments?.getString("questionIndex")?.toIntOrNull() ?: 0
+                    ExamScreen(navController = navController, questionIndex, questionViewModel)
+                }
+
 
                 // ✅ Поддерживаем передачу `correctAnswersCount`
                 composable("result_screen/{correctAnswers}") { backStackEntry ->
@@ -144,9 +149,11 @@ fun MenuButton(text: String, navController: NavController, viewModel: QuestionVi
                     navController.navigate("all_questions_screen") // ✅ Если в NavHost передан viewModel, всё будет работать
                 }                "Избранные билеты" -> navController.navigate("favorite_question_screen")
                 "Экзамен" -> {
-                    viewModel.loadRandomTicket() // ✅ Грузим случайный билет
-                    navController.navigate("exam_screen")
+                    viewModel.loadRandomTicket() // ✅ Загружаем случайный билет
+                    val startIndex = viewModel.currentQuestionIndex // ✅ Берём индекс первого вопроса билета
+                    navController.navigate("exam_screen/$startIndex") // ✅ Передаём индекс в навигацию
                 }
+
             }
         },
         modifier = Modifier
