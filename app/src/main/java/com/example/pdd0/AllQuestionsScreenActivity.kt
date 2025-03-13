@@ -5,6 +5,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
@@ -21,7 +22,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -72,10 +75,23 @@ fun AllQuestionsScreen(navController: NavController, viewModel: QuestionViewMode
     val context = LocalContext.current
     var filteredTickets by remember { mutableStateOf(questionList.map { it.ticket_number }) } // ✅ Теперь сразу содержит все билеты
 
-    Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp)
+    Box(
+        modifier = Modifier.fillMaxSize()
     ) {
-        Row(
+        // Фоновое изображение
+        Image(
+            painter = painterResource(id = R.drawable.favorite_background), // Замените на ваш ресурс изображения
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop // Масштабирование изображения
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
+            Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
@@ -102,6 +118,7 @@ fun AllQuestionsScreen(navController: NavController, viewModel: QuestionViewMode
                 TicketItem(ticketNumber, questionList, navController, viewModel)
             }
         }
+    }
     }
 }
 

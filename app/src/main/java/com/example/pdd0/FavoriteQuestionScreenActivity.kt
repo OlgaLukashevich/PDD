@@ -1,6 +1,7 @@
 package com.example.pdd0
 
 import android.util.Log
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,7 +16,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.navigation.NavController
 import com.example.pdd0.dataClass.Question
@@ -54,35 +57,60 @@ fun FavoriteQuestionScreen(navController: NavController, viewModel: QuestionView
         .distinct()
         .sortedBy { it.toIntOrNull() ?: Int.MAX_VALUE }
 
-    Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp)
+    Box(
+        modifier = Modifier.fillMaxSize()
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        // Фоновое изображение
+        Image(
+            painter = painterResource(id = R.drawable.favorite_background), // Замените на ваш ресурс изображения
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop // Масштабирование изображения
+        )
+
+        Column(
+            modifier = Modifier.fillMaxSize().padding(16.dp)
         ) {
-            IconButton(onClick = { navController.popBackStack("main_screen", inclusive = false) }) {
-                Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Back")
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = {
+                    navController.popBackStack(
+                        "main_screen",
+                        inclusive = false
+                    )
+                }) {
+                    Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Back")
+                }
+                Text(text = "Избранные билеты", fontSize = 24.sp, fontWeight = FontWeight.Bold)
             }
-            Text(text = "Избранные билеты", fontSize = 24.sp, fontWeight = FontWeight.Bold)
-        }
 
-        Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
-        if (uniqueFavoriteTickets.isEmpty()) {
-            Log.d("FavoriteScreen", "❌ Избранных билетов нет, показываем сообщение")
-            Text(
-                text = "Избранных билетов пока нет.",
-                fontSize = 18.sp,
-                color = Color.Gray,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            )
-        } else {
-            Log.d("FavoriteScreen", "✅ Отображаем список избранных билетов: $uniqueFavoriteTickets")
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(uniqueFavoriteTickets) { ticketNumber ->
-                    FavoriteTicketItem(ticketNumber, favoriteQuestionList, navController, viewModel)
+            if (uniqueFavoriteTickets.isEmpty()) {
+                Log.d("FavoriteScreen", "❌ Избранных билетов нет, показываем сообщение")
+                Text(
+                    text = "Избранных билетов пока нет.",
+                    fontSize = 18.sp,
+                    color = Color.Gray,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+            } else {
+                Log.d(
+                    "FavoriteScreen",
+                    "✅ Отображаем список избранных билетов: $uniqueFavoriteTickets"
+                )
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    items(uniqueFavoriteTickets) { ticketNumber ->
+                        FavoriteTicketItem(
+                            ticketNumber,
+                            favoriteQuestionList,
+                            navController,
+                            viewModel
+                        )
+                    }
                 }
             }
         }

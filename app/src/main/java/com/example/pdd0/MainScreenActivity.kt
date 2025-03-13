@@ -3,6 +3,9 @@ package com.example.pdd0
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -10,7 +13,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -85,85 +90,130 @@ class MainScreenActivity : ComponentActivity() {
 
 @Composable
 fun MainScreen(navController: NavController, questionViewModel: QuestionViewModel, questionList: List<Question>) {
-   // var filteredTickets by remember { mutableStateOf<List<String>>(questionList.map { it.ticket_number }) } // ✅ Теперь изначально содержит все билеты
+    // var filteredTickets by remember { mutableStateOf<List<String>>(questionList.map { it.ticket_number }) } // ✅ Теперь изначально содержит все билеты
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+    Box(
+        modifier = Modifier.fillMaxSize()
     ) {
-         Spacer(modifier = Modifier.height(32.dp))
-
-        // Заголовок
-        Text(
-            text = "ПДД РБ",
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            text = "изучаем",
-            fontSize = 18.sp,
-            color = Color.Gray
+        // Фоновое изображение
+        Image(
+            painter = painterResource(id = R.drawable.main_background), // Замените на ваш ресурс изображения
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop // Масштабирование изображения
         )
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(32.dp))
 
-        // Кнопки меню
-        MenuButtons(navController, questionViewModel)
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Иконки социальных сетей
-        SocialIcons()
-    }
-}
-
-@Composable
-fun MenuButtons(navController: NavController, viewModel: QuestionViewModel) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        MenuButton("Случайный билет", navController, viewModel)
-        MenuButton("Все билеты", navController, viewModel)
-        MenuButton("Избранные билеты", navController, viewModel)
-        MenuButton("Экзамен", navController, viewModel)
-    }
-}
-
-@Composable
-fun MenuButton(text: String, navController: NavController, viewModel: QuestionViewModel) {
-    Button(
-        onClick = {
-            when (text) {
-                "Случайный билет" -> {
-                    val randomTicket = (0 until 40).random() * 10 // ✅ Выбираем случайный билет
-                    viewModel.currentTicketStartIndex = randomTicket // ✅ Запоминаем его стартовый индекс
-                    viewModel.currentQuestionIndex = randomTicket // ✅ Ставим первый вопрос случайного билета
-                    navController.navigate("question_screen/$randomTicket")
+            // Текст "ПДД РБ" и "изучаем" в закрашенной рамке
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth() // Полоска на всю ширину экрана
+                    .background(Color(0xFFA8D5BA), RoundedCornerShape(8.dp)) // Закрашенная рамка
+                    .padding(16.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp), // Отступы по бокам
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "ПДД РБ",
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Gray // Серый цвет текста
+                    )
+                    Text(
+                        text = "изучаем",
+                        fontSize = 18.sp,
+                        color = Color.Gray // Серый цвет текста
+                    )
                 }
-
-
-                "Все билеты" -> {
-                    navController.navigate("all_questions_screen") // ✅ Если в NavHost передан viewModel, всё будет работать
-                }                "Избранные билеты" -> navController.navigate("favorite_question_screen")
-                "Экзамен" -> {
-                    viewModel.loadRandomTicket() // ✅ Загружаем случайный билет
-                    val startIndex = viewModel.currentQuestionIndex // ✅ Берём индекс первого вопроса билета
-                    navController.navigate("exam_screen/$startIndex") // ✅ Передаём индекс в навигацию
-                }
-
             }
-        },
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(48.dp),
-        shape = RoundedCornerShape(8.dp)
-    ) {
-        Text(text = text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+
+            Spacer(modifier = Modifier.weight(1f)) // Растягиваем пространство между текстом и кнопками
+
+            // Кнопки меню по центру экрана
+            MenuButtons(navController, questionViewModel)
+
+            Spacer(modifier = Modifier.weight(1f)) // Растягиваем пространство между кнопками и иконками
+        }
+
+        // Иконки социальных сетей справа
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+        ) {
+            SocialIcons()
+        }
     }
 }
+
+    @Composable
+    fun MenuButtons(navController: NavController, viewModel: QuestionViewModel) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            MenuButton("Случайный билет", navController, viewModel)
+            MenuButton("Все билеты", navController, viewModel)
+            MenuButton("Избранные билеты", navController, viewModel)
+            MenuButton("Экзамен", navController, viewModel)
+        }
+    }
+
+    @Composable
+    fun MenuButton(text: String, navController: NavController, viewModel: QuestionViewModel) {
+        var isPressed by remember { mutableStateOf(false) } // Состояние кнопки
+
+        Button(
+            onClick = {
+                when (text) {
+                    "Случайный билет" -> {
+                        val randomTicket = (0 until 40).random() * 10 // ✅ Выбираем случайный билет
+                        viewModel.currentTicketStartIndex =
+                            randomTicket // ✅ Запоминаем его стартовый индекс
+                        viewModel.currentQuestionIndex =
+                            randomTicket // ✅ Ставим первый вопрос случайного билета
+                        navController.navigate("question_screen/$randomTicket")
+                    }
+
+
+                    "Все билеты" -> {
+                        navController.navigate("all_questions_screen") // ✅ Если в NavHost передан viewModel, всё будет работать
+                    }
+
+                    "Избранные билеты" -> navController.navigate("favorite_question_screen")
+                    "Экзамен" -> {
+                        viewModel.loadRandomTicket() // ✅ Загружаем случайный билет
+                        val startIndex =
+                            viewModel.currentQuestionIndex // ✅ Берём индекс первого вопроса билета
+                        navController.navigate("exam_screen/$startIndex") // ✅ Передаём индекс в навигацию
+                    }
+
+                }
+                isPressed = !isPressed // Изменяем состояние при нажатии
+            },
+            modifier = Modifier
+                .width(200.dp) // Ширина кнопки
+                .height(48.dp), // Высота кнопки
+            shape = RoundedCornerShape(8.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = if (isPressed) Color(0xFFA8D5BA) else Color(0xFF8FB3A5) // Серозеленый цвет
+            )
+        ) {
+            Text(text = text, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        }
+    }
+
 
 
 
