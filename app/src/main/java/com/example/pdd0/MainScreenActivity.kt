@@ -199,13 +199,16 @@ fun MainScreen(navController: NavController, questionViewModel: QuestionViewMode
 //                        navController.navigate("exam_screen/$startIndex") // ✅ Передаём индекс в навигацию
 //                    }
                     "Экзамен" -> {
-                        viewModel.loadRandomTicket() // ✅ Загружаем случайный билет
-                        val startIndex = viewModel.currentQuestionIndex // ✅ Берём индекс первого вопроса билета
+                        viewModel.startNewExam() // Сбрасываем старые данные экзамена
+                        val startIndex = viewModel.currentQuestionIndex // Берём индекс первого вопроса нового экзамена
                         navController.navigate("exam_screen/$startIndex") {
-                            // Удаляем все экраны из стека, включая экран результата
+                            // Удаляем все экраны из стека, включая экран с результатом
                             popUpTo("main_screen") { inclusive = true }
+                            launchSingleTop = true // Убирает возможность перехода на тот же экран снова
                         }
                     }
+
+
 
 
                 }

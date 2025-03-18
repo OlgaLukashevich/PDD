@@ -121,10 +121,14 @@ fun ResultScreen(correctAnswersCount: Int, totalQuestions: Int, navController: N
             Spacer(modifier = Modifier.height(16.dp))
             // Кнопка вернуться на главную
             Button(onClick = {
-                navController.navigate("main_screen")
+                navController.navigate("main_screen") {
+                    // Удаляем все экраны с результатами и другие экраны из стека
+                    popUpTo("main_screen") { inclusive = true }
+                }
             }) {
                 Text("Главная")
             }
+
         }
 
     }

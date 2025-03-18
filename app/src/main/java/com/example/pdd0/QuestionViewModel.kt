@@ -177,6 +177,11 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
     }
 
 
+    // Новый метод для начала экзамена
+    fun startNewExam() {
+        resetExam() // Сбрасываем старые результаты
+        loadRandomTicket() // Загружаем случайный билет
+    }
 
 
 
