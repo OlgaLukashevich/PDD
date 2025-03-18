@@ -35,6 +35,13 @@ fun ResultScreen(correctAnswersCount: Int, totalQuestions: Int, navController: N
     val favoriteTickets by viewModel.favoriteTickets.collectAsState() // ✅ Следим за избранными билетами
     val isFavorite = favoriteTickets.contains(currentTicketNumber) // ✅ Проверяем, в избранном ли билет
 
+    // Определяем сообщение в зависимости от количества правильных ответов
+    val resultMessage = when {
+        correctAnswersCount == 10 -> "Шикарно! Вы правильно ответили на все вопросы!"
+        correctAnswersCount >= 7 -> "Хороший результат! Но есть несколько ошибок. Попробуйте ещё раз!"
+        else -> "Не расстраивайтесь, вы обязательно сможете улучшить результат. Пройдите тест ещё раз."
+    }
+
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -67,6 +74,15 @@ fun ResultScreen(correctAnswersCount: Int, totalQuestions: Int, navController: N
                 color = if (correctAnswersCount == 10) Color.Green else Color.Red //== totalQuestions
             )
 
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = resultMessage,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Normal,
+                color = if (correctAnswersCount == 10) Color.Green else Color.Black
+            )
+
             Spacer(modifier = Modifier.height(32.dp))
 
             // 🔥 Кнопка "Пройти заново"
@@ -83,13 +99,13 @@ fun ResultScreen(correctAnswersCount: Int, totalQuestions: Int, navController: N
 
 
 
-            Spacer(modifier = Modifier.height(16.dp))
-            // ✅ Кнопка "Добавить в избранное"
-            Button(onClick = {
-                viewModel.toggleFavoriteTicket(currentTicketNumber) // ✅ Передаём правильный номер билета
-            }) {
-                Text(if (isFavorite) "Удалить из избранного" else "Добавить в избранное")
-            }
+//            Spacer(modifier = Modifier.height(16.dp))
+//            // ✅ Кнопка "Добавить в избранное"
+//            Button(onClick = {
+//                viewModel.toggleFavoriteTicket(currentTicketNumber) // ✅ Передаём правильный номер билета
+//            }) {
+//                Text(if (isFavorite) "Удалить из избранного" else "Добавить в избранное")
+//            }
 
             Spacer(modifier = Modifier.height(16.dp))
             // 🔥 Кнопка "Следующий билет"

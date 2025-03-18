@@ -162,9 +162,6 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
     }
 
 
-
-
-
     // ✅ Функция для увеличения количества ошибок в режиме экзамена
     fun incrementExamWrongAnswers() {
         examWrongAnswersCount++

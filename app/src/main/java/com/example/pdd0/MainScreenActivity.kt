@@ -125,10 +125,10 @@ fun MainScreen(navController: NavController, questionViewModel: QuestionViewMode
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "ПДД РБ",
+                        text = "ПДД",
                         fontSize = 32.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.Gray // Серый цвет текста
+                        color = Color.Black // Серый цвет текста
                     )
                     Text(
                         text = "изучаем",
@@ -192,12 +192,21 @@ fun MainScreen(navController: NavController, questionViewModel: QuestionViewMode
                     }
 
                     "Избранные билеты" -> navController.navigate("favorite_question_screen")
+//                    "Экзамен" -> {
+//                        viewModel.loadRandomTicket() // ✅ Загружаем случайный билет
+//                        val startIndex =
+//                            viewModel.currentQuestionIndex // ✅ Берём индекс первого вопроса билета
+//                        navController.navigate("exam_screen/$startIndex") // ✅ Передаём индекс в навигацию
+//                    }
                     "Экзамен" -> {
                         viewModel.loadRandomTicket() // ✅ Загружаем случайный билет
-                        val startIndex =
-                            viewModel.currentQuestionIndex // ✅ Берём индекс первого вопроса билета
-                        navController.navigate("exam_screen/$startIndex") // ✅ Передаём индекс в навигацию
+                        val startIndex = viewModel.currentQuestionIndex // ✅ Берём индекс первого вопроса билета
+                        navController.navigate("exam_screen/$startIndex") {
+                            // Удаляем все экраны из стека, включая экран результата
+                            popUpTo("main_screen") { inclusive = true }
+                        }
                     }
+
 
                 }
                 isPressed = !isPressed // Изменяем состояние при нажатии

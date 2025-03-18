@@ -41,6 +41,7 @@ fun PauseDialog(
         },
         text = {
             Column {
+
                 TextButton(onClick = onResume) {
                     Text("Продолжить")
                 }
