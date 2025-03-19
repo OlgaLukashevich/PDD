@@ -74,15 +74,6 @@ fun ResultScreen(correctAnswersCount: Int, totalQuestions: Int, navController: N
                 color = if (correctAnswersCount == 10) Color.Green else Color.Red //== totalQuestions
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = resultMessage,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Normal,
-                color = if (correctAnswersCount == 10) Color.Green else Color.Black
-            )
-
             Spacer(modifier = Modifier.height(32.dp))
 
             // 🔥 Кнопка "Пройти заново"
@@ -99,7 +90,7 @@ fun ResultScreen(correctAnswersCount: Int, totalQuestions: Int, navController: N
 
 
 
-//            Spacer(modifier = Modifier.height(16.dp))
+        //    Spacer(modifier = Modifier.height(16.dp))
 //            // ✅ Кнопка "Добавить в избранное"
 //            Button(onClick = {
 //                viewModel.toggleFavoriteTicket(currentTicketNumber) // ✅ Передаём правильный номер билета
@@ -119,11 +110,17 @@ fun ResultScreen(correctAnswersCount: Int, totalQuestions: Int, navController: N
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-            // Кнопка вернуться на главную
+//            // Кнопка вернуться на главную
+//            Button(onClick = {
+//                navController.navigate("main_screen")
+//            }) {
+//                Text("Главная")
+//            }
+            // Кнопка "Главная"
             Button(onClick = {
+                viewModel.resetTest() // ✅ Добавляем сброс состояния теста
                 navController.navigate("main_screen") {
-                    // Удаляем все экраны с результатами и другие экраны из стека
-                    popUpTo("main_screen") { inclusive = true }
+                    popUpTo("main_screen") { inclusive = true } // ✅ Удаляем все предыдущие экраны, чтобы не возвращаться к старым данным
                 }
             }) {
                 Text("Главная")

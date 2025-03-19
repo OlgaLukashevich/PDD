@@ -22,6 +22,8 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
     // ✅ Добавляем отдельный счетчик ошибок для экзамена
     var examWrongAnswersCount by mutableStateOf(0)
         private set
+    private val _ticketProgress = mutableStateMapOf<String, Float>()
+    val ticketProgress: Map<String, Float> get() = _ticketProgress
 
 
 
@@ -167,21 +169,10 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
         examWrongAnswersCount++
     }
 
-    // ✅ Функция сброса ошибок перед началом экзамена
-    fun resetExam() {
-        examWrongAnswersCount = 0
-        correctAnswersCount = 0
-        isTestFinished = false
-        questionStates.clear()
-        currentQuestionIndex = 0
-    }
 
 
-    // Новый метод для начала экзамена
-    fun startNewExam() {
-        resetExam() // Сбрасываем старые результаты
-        loadRandomTicket() // Загружаем случайный билет
-    }
+
+
 
 
 

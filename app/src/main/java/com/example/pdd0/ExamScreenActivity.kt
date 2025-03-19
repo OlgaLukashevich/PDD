@@ -90,10 +90,18 @@ fun ExamScreen(navController: NavController, questionIndex: Int, viewModel: Ques
     // Если время вышло или допущено 2 ошибки → завершаем тест
     if (isTimeUp || viewModel.examWrongAnswersCount >= 2) {
         LaunchedEffect(Unit) {
-            navController.navigate("result_screen/${viewModel.correctAnswersCount}")
+            // Переход на результат, и удаление всех предыдущих экранов
+            navController.navigate("result_screen/${viewModel.correctAnswersCount}") {
+                // Удаляем все экраны, включая экран экзамена, и возвращаемся к экрану результатов
+                popUpTo("exam_screen") { inclusive = true } // Удаляем экран экзамена
+            }
         }
         return
     }
+
+
+
+
 
     // Загружаем вопрос
     LaunchedEffect(questionIndex) {
