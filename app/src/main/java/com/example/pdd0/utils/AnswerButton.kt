@@ -22,9 +22,9 @@ fun AnswerButton(
     isAnswerCorrect: Boolean
 ) {
     val backgroundColor = when {
-        isSelected && isAnswerCorrect -> Color.Green
-        isSelected && !isAnswerCorrect -> Color.Red
-        else -> Color.Gray
+        isSelected && isAnswerCorrect -> Color.Green.copy(alpha = 0.8f)  // Убираем прозрачность
+        isSelected && !isAnswerCorrect -> Color.Red.copy(alpha = 0.7f)   // Убираем прозрачность
+        else -> Color.Gray.copy(alpha = 0.9f)  // Убираем прозрачность
     }
 
     Button(

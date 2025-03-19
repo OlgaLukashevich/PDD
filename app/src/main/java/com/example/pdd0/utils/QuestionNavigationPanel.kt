@@ -1,10 +1,13 @@
 package com.example.pdd0.utils
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -38,7 +41,7 @@ fun QuestionNavigationPanel(
 
 
     Row(
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -65,12 +68,10 @@ fun QuestionNavigationPanel(
                 questionState.isAnswerCorrect -> Color.Green        // Правильный ответ
                 else -> Color.Red                                   // Неправильный ответ
             }
-
-            Text(
-                text = "${offset + 1}",
-                fontSize = 18.sp,
+            // Обернуть текст в Box с фоном
+            Box(
                 modifier = Modifier
-                    .padding(4.dp)
+                    .padding(2.dp)
                     .clickable {
                         viewModel.saveCurrentQuestionState()
                         if (viewModel.currentQuestionIndex != questionIndex) {
@@ -81,10 +82,20 @@ fun QuestionNavigationPanel(
                         navController.navigate("question_screen/$questionIndex") {
                             launchSingleTop = true
                         }
-                    },
-                color = color,
-                fontWeight = if (viewModel.currentQuestionIndex == questionIndex) FontWeight.Bold else FontWeight.Normal
-            )
+                    }
+                    .background(
+                        color.copy(alpha = 0.5f), // Полупрозрачный фон
+                        shape = RoundedCornerShape(10) // Круглый фон
+                    )
+                    .padding(6.dp) // Отступы внутри
+            ) {
+                Text(
+                    text = "${offset + 1}",
+                    fontSize = 18.sp,
+                    color = Color.White, // Белый цвет текста для контраста
+                    fontWeight = if (viewModel.currentQuestionIndex == questionIndex) FontWeight.Bold else FontWeight.Normal
+                )
+            }
         }
     }
 

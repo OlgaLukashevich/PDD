@@ -7,8 +7,10 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -24,6 +26,8 @@ import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -224,37 +228,47 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
                             viewModel.currentQuestionIndex--
                         }
                     },
-                    enabled = viewModel.currentQuestionIndex > 0
+                    enabled = viewModel.currentQuestionIndex > 0,
+                    modifier = Modifier
+                        .background(Color.Gray.copy(alpha = 0.4f),  shape = RoundedCornerShape(10)) // Полупрозрачная обводка
+                        .padding(4.dp) // Паддинг вокруг иконки
                 ) {
                     Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Previous")
                 }
-
-                // Если все вопросы отвечены, показываем галочку
-                if (viewModel.allQuestionsAnswered()) {
-                    IconButton(
-                        onClick = {
-                            navController.navigate("result_screen/${viewModel.correctAnswersCount}")
-                        }
-                    ) {
-                        Icon(imageVector = Icons.Filled.Check, contentDescription = "Finish")
-                    }
-                } else {
-                    // 🔥 Правильный переход "Вперёд"
-                    IconButton(
-                        onClick = {
-                            viewModel.saveCurrentQuestionState()
-                            viewModel.moveToNextQuestion()
-                            navController.navigate("question_screen/${viewModel.currentQuestionIndex}") {
-                                launchSingleTop = true // ✅ Избегаем дублирования экранов
-                            }
-                        }
-                    ) {
-                        Icon(imageVector = Icons.Filled.ArrowForward, contentDescription = "Next")
-                    }
+                // Кнопка "Завершить тест"
+                IconButton(
+                    onClick = {
+                        // Переход на экран с результатами
+                        navController.navigate("result_screen/${viewModel.correctAnswersCount}")
+                    },
+                    modifier = Modifier
+                        .background(Color.Gray.copy(alpha = 0.4f),  shape = RoundedCornerShape(10))
+                        .padding(4.dp)
+                ) {
+                    Icon(imageVector = Icons.Filled.Check, contentDescription = "Finish Test")
                 }
 
-
+                // Кнопка "Вперед"
+                IconButton(
+                    onClick = {
+                        viewModel.saveCurrentQuestionState()
+                        viewModel.moveToNextQuestion()
+                        navController.navigate("question_screen/${viewModel.currentQuestionIndex}") {
+                            launchSingleTop = true
+                        }
+                    },
+                    modifier = Modifier
+                        .background(Color.Gray.copy(alpha = 0.4f), shape = RoundedCornerShape(10))
+                        .padding(4.dp)
+                ) {
+                    Icon(imageVector = Icons.Filled.ArrowForward, contentDescription = "Next")
+                }
             }
+
+
+
+
+
 
 
         }
@@ -263,11 +277,13 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
         // Диалоговое окно для увеличенной картинки
         if (isImageFullScreen) {
             Dialog(onDismissRequest = { isImageFullScreen = false }) {
+                val scaleState = remember { mutableStateOf(1f) } // Хранение масштаба изображения
+
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Color.Black) // Затемнённый фон
-                        .clickable { isImageFullScreen = false } // Закрытие при нажатии
+                        .background(Color.Black)
+                        .clickable { isImageFullScreen = false } // Закрытие при нажатии на фон
                 ) {
                     val imagePainter = rememberAsyncImagePainter(
                         model = ImageRequest.Builder(LocalContext.current)
@@ -275,31 +291,46 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
                             .build()
                     )
 
-                    IconButton(
-                        onClick = { isImageFullScreen = false },
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(16.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Close,
-                            contentDescription = "Close",
-                            tint = Color.White
-                        )
-                    }
-
-
-                    Image(
-                        painter = imagePainter,
-                        contentDescription = "Full-screen image",
+                    // Обработчик жестов для увеличения картинки
+                    Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(16.dp),
-                        contentScale = ContentScale.Fit
-                    )
+                            .pointerInput(Unit) {
+                                detectTransformGestures { _, pan, zoom, _ ->
+                                    scaleState.value *= zoom // Масштабируем картинку по жесту
+                                }
+                            }
+                    ) {
+                        IconButton(
+                            onClick = { isImageFullScreen = false },
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(16.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Close,
+                                contentDescription = "Close",
+                                tint = Color.White
+                            )
+                        }
+
+                        Image(
+                            painter = imagePainter,
+                            contentDescription = "Full-screen image",
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .graphicsLayer(
+                                    scaleX = scaleState.value,
+                                    scaleY = scaleState.value
+                                ) // Применяем масштабирование
+                                .padding(16.dp),
+                            contentScale = ContentScale.Fit
+                        )
+                    }
                 }
             }
         }
+
     }
 }
 
