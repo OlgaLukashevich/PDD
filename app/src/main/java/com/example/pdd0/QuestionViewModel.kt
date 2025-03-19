@@ -169,10 +169,15 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
         examWrongAnswersCount++
     }
 
+    fun getTicketProgress(ticketNumber: String): Float {
+        // Фильтруем вопросы для текущего билета
+        val ticketQuestions = questionStates.filter { it.key.toString() == ticketNumber }
 
-
-
-
+        // Рассчитываем прогресс, используя количество правильных ответов
+        val answeredQuestionsCount = ticketQuestions.count { it.value.isAnswerCorrect }
+        val totalQuestionsCount = ticketQuestions.size
+        return if (totalQuestionsCount > 0) answeredQuestionsCount.toFloat() / totalQuestionsCount else 0f
+    }
 
 
 

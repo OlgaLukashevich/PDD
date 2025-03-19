@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -28,47 +29,52 @@ fun openUrl(context: Context, url: String) {
 fun SocialIcons() {
     val context = LocalContext.current
 
-    Row(
+    // Оборачиваем в Box для выравнивания
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(20.dp), // Можно настроить отступы по вашему желанию
+        contentAlignment = Alignment.Center // Центрируем все элементы внутри Box
     ) {
-        // ✅ Twitter
-        IconButton(onClick = { openUrl(context, "https://twitter.com") }) {
-            Image(
-                painter = painterResource(id = R.drawable.ic_twitter), // Замените на свой ресурс
-                contentDescription = "Twitter",
-                modifier = Modifier.size(40.dp) // ✅ Фиксированный размер
-            )
-        }
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // ✅ Twitter
+            IconButton(onClick = { openUrl(context, "https://twitter.com") }) {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_twitter), // Замените на свой ресурс
+                    contentDescription = "Twitter",
+                    modifier = Modifier.size(40.dp) // ✅ Фиксированный размер
+                )
+            }
 
-        // ✅ YouTube
-        IconButton(onClick = { openUrl(context, "https://youtube.com") }) {
-            Image(
-                painter = painterResource(id = R.drawable.ic_youtube),
-                contentDescription = "YouTube",
-                modifier = Modifier.size(40.dp)
-            )
-        }
+            // ✅ YouTube
+            IconButton(onClick = { openUrl(context, "https://youtube.com") }) {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_youtube),
+                    contentDescription = "YouTube",
+                    modifier = Modifier.size(40.dp)
+                )
+            }
 
-        // ✅ Instagram
-        IconButton(onClick = { openUrl(context, "https://instagram.com") }) {
-            Image(
-                painter = painterResource(id = R.drawable.ic_instagram),
-                contentDescription = "Instagram",
-                modifier = Modifier.size(40.dp)
-            )
-        }
+            // ✅ Instagram
+            IconButton(onClick = { openUrl(context, "https://instagram.com") }) {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_instagram),
+                    contentDescription = "Instagram",
+                    modifier = Modifier.size(40.dp)
+                )
+            }
 
-        // ✅ Telegram
-        IconButton(onClick = { openUrl(context, "https://t.me") }) {
-            Image(
-                painter = painterResource(id = R.drawable.ic_telegram),
-                contentDescription = "Telegram",
-                modifier = Modifier.size(40.dp)
-            )
+            // ✅ Telegram
+            IconButton(onClick = { openUrl(context, "https://t.me") }) {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_telegram),
+                    contentDescription = "Telegram",
+                    modifier = Modifier.size(40.dp)
+                )
+            }
         }
     }
 }

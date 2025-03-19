@@ -115,7 +115,7 @@ fun MainScreen(navController: NavController, questionViewModel: QuestionViewMode
             Box(
                 modifier = Modifier
                     .fillMaxWidth() // Полоска на всю ширину экрана
-                    .background(Color(0xFFA8D5BA), RoundedCornerShape(8.dp)) // Закрашенная рамка
+                    .background(Color(0xFF34bfff).copy(alpha = 0.8f), RoundedCornerShape(8.dp)) // Закрашенная рамка
                     .padding(16.dp)
             ) {
                 Column(
@@ -207,7 +207,9 @@ fun MainScreen(navController: NavController, questionViewModel: QuestionViewMode
                 .height(48.dp), // Высота кнопки
             shape = RoundedCornerShape(8.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = if (isPressed) Color(0xFFA8D5BA) else Color(0xFF8FB3A5) // Серозеленый цвет
+                containerColor = if (isPressed)    Color.Gray.copy(alpha = 0.9f)  else Color(
+                    0xFF16B4AB
+                ) // Серозеленый цвет  Color(0xFFB0EAC8)
             )
         ) {
             Text(text = text, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)

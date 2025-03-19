@@ -112,13 +112,20 @@ fun AllQuestionsScreen(navController: NavController, viewModel: QuestionViewMode
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // ✅ Отображаем найденные билеты
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(filteredTickets) { ticketNumber ->
-                TicketItem(ticketNumber, questionList, navController, viewModel)
+            // ✅ Отображаем найденные билеты с увеличенным расстоянием и разделяющей полосой
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                items(filteredTickets) { ticketNumber ->
+                    TicketItem(ticketNumber, questionList, navController, viewModel)
+
+                    // Разделитель после каждого билета
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 8.dp), // Увеличиваем расстояние
+                        color = Color.Gray, // Цвет разделителя
+                        thickness = 1.dp // Толщина разделителя
+                    )
+                }
             }
         }
-    }
     }
 }
 
@@ -126,6 +133,15 @@ fun AllQuestionsScreen(navController: NavController, viewModel: QuestionViewMode
 fun TicketItem(ticketNumber: String, questionList: List<Question>, navController: NavController, viewModel: QuestionViewModel) {
     val favoriteTickets by viewModel.favoriteTickets.collectAsState() // ✅ Следим за избранными билетами
     val isFavorite = favoriteTickets.contains(ticketNumber) // ✅ Проверяем статус билета
+    val ticketProgress = viewModel.getTicketProgress(ticketNumber) // Получаем прогресс для билета
+
+    // Получаем список вопросов для текущего билета
+    val ticketQuestions = questionList.filter { it.ticket_number == ticketNumber }
+
+    // Определяем цвет прогресс-бара: зеленый, если прогресс больше 0, красный, если меньше
+    val progressColor = if (ticketProgress == 1f) Color.Green else if (ticketProgress > 0f) Color.Yellow else Color.Red
+
+
 
     Row(
         modifier = Modifier
@@ -148,6 +164,17 @@ fun TicketItem(ticketNumber: String, questionList: List<Question>, navController
             fontSize = 18.sp,
             modifier = Modifier.weight(1f)
         )
+
+        LinearProgressIndicator(
+            progress = ticketProgress,  // Прогресс из ViewModel
+            modifier = Modifier
+                .width(100.dp)
+                .height(4.dp)
+                .padding(horizontal = 8.dp),
+            color = Color.Green,
+            trackColor = Color.LightGray
+        )
+
 
         // ✅ Кликабельная звезда для добавления/удаления из избранного
         IconButton(
