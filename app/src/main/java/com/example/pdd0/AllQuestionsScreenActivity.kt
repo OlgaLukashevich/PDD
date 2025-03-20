@@ -6,6 +6,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
@@ -111,19 +112,22 @@ fun AllQuestionsScreen(navController: NavController, viewModel: QuestionViewMode
         )
 
         Spacer(modifier = Modifier.height(16.dp))
+            // Текст "ПДД РБ" и "изучаем" в закрашенной рамке
 
-            // ✅ Отображаем найденные билеты с увеличенным расстоянием и разделяющей полосой
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(filteredTickets) { ticketNumber ->
-                    TicketItem(ticketNumber, questionList, navController, viewModel)
+                // ✅ Отображаем найденные билеты с увеличенным расстоянием и разделяющей полосой
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    items(filteredTickets) { ticketNumber ->
+                        TicketItem(ticketNumber, questionList, navController, viewModel)
 
-                    // Разделитель после каждого билета
-                    HorizontalDivider(
-                        modifier = Modifier.padding(vertical = 8.dp), // Увеличиваем расстояние
-                        color = Color.Gray, // Цвет разделителя
-                        thickness = 1.dp // Толщина разделителя
-                    )
-                }
+                        // Разделитель после каждого билета
+                        HorizontalDivider(
+                            modifier = Modifier.padding(vertical = 8.dp), // Увеличиваем расстояние
+                            color = Color.Gray, // Цвет разделителя
+                            thickness = 1.dp // Толщина разделителя
+
+                        )
+                    }
+
             }
         }
     }
@@ -161,18 +165,21 @@ fun TicketItem(ticketNumber: String, questionList: List<Question>, navController
     ) {
         Text(
             text = ticketNumber,
-            fontSize = 18.sp,
-            modifier = Modifier.weight(1f)
+            fontSize = 20.sp,
+            modifier = Modifier.weight(1f) // Закрашенная рамка
+
         )
 
         LinearProgressIndicator(
-            progress = ticketProgress,  // Прогресс из ViewModel
+            progress = {
+                ticketProgress  // Прогресс из ViewModel
+            },
             modifier = Modifier
-                .width(100.dp)
+                .width(200.dp)
                 .height(4.dp)
                 .padding(horizontal = 8.dp),
             color = Color.Green,
-            trackColor = Color.LightGray
+            trackColor = Color.LightGray,
         )
 
 

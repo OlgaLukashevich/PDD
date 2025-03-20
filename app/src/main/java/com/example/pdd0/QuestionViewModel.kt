@@ -1,12 +1,16 @@
 package com.example.pdd0
 
+import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.compose.runtime.*
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.example.pdd0.dataClass.Question
 import com.example.pdd0.dataClass.QuestionState
 import com.example.pdd0.dataStore.FavoriteTicketsManager
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -24,6 +28,32 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
         private set
     private val _ticketProgress = mutableStateMapOf<String, Float>()
     val ticketProgress: Map<String, Float> get() = _ticketProgress
+
+    // Список вопросов
+    var questionList: List<Question> = emptyList()
+
+
+    // Таймер в миллисекундах
+    private val _timeLeft = MutableLiveData<Long>()
+    val timeLeft: LiveData<Long> get() = _timeLeft
+
+    var isTimeUp by mutableStateOf(false) // Для отслеживания, когда таймер истечет
+
+    // Начальная длительность таймера (3 минуты)
+    init {
+        _timeLeft.value = 3 * 60 * 1000L
+        startTimer()
+    }
+
+    private fun startTimer() {
+        viewModelScope.launch {
+            while (_timeLeft.value!! > 0) {
+                delay(1000L) // Каждую секунду уменьшаем время
+                _timeLeft.value = _timeLeft.value!! - 1000L
+            }
+            isTimeUp = true
+        }
+    }
 
 
 
@@ -45,6 +75,17 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
         correctAnswersCount = questionStates.values.count { it.isAnswerCorrect }
         checkTestCompletion() // 🔥 Проверяем, завершён ли тест после ответа
     }
+
+
+
+    fun loadQuestions(questionList: List<Question>) {
+        Log.d("QuestionViewModel", "Загружаем вопросы: ${questionList.size}")
+        if (questionList.isEmpty()) {
+            Log.e("QuestionViewModel", "Ошибка: список вопросов пуст")
+        }
+        this.questionList = questionList
+    }
+
 
     fun loadQuestionState() {
         // Состояние уже в `questionStates`, поэтому ничего не делаем

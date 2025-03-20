@@ -52,8 +52,9 @@ android {
 dependencies {
 
 
-
+    implementation ("androidx.work:work-runtime-ktx:2.7.1")
     implementation ("com.github.bumptech.glide:glide:4.15.1")
+    implementation(libs.androidx.runtime.livedata)
     annotationProcessor ("com.github.bumptech.glide:compiler:4.15.1")
     implementation("io.coil-kt:coil-compose:2.1.0")  // Для использования Coil в Jetpack Compose
 

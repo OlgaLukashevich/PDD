@@ -75,6 +75,17 @@ fun SocialIcons() {
                     modifier = Modifier.size(40.dp)
                 )
             }
+
+            // ✅ book
+            IconButton(onClick = { openUrl(context, "https://dosaaf.net/txt_pdd.html") }) {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_pdd),
+                    contentDescription = "book",
+                    modifier = Modifier.size(40.dp)
+                )
+            }
+
+
         }
     }
 }

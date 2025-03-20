@@ -59,16 +59,7 @@ fun PauseDialog(
                     Text(if (isFavorite) "Удалить из избранного" else "Добавить в избранное")
                 }
 
-                TextButton(onClick = {
-                    viewModel.loadRandomTicket()
-                    navController.navigate("question_screen/${viewModel.currentQuestionIndex}") {
-                        popUpTo("main_screen") { inclusive = false }
-                    }
-                }) {
-                    Text("Следующий случайный билет(пройти заново не работает)")
-                }
-
-            }
+               }
         },
         confirmButton = {
             TextButton(onClick = onResume) {

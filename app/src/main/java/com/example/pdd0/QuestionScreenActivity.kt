@@ -104,6 +104,10 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
         }
         return
     }
+
+    // Статус ответа
+    var showFeedback by remember { mutableStateOf(false) } // Показывать подсказку и тему
+
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -204,6 +208,7 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
                         onClick = {
                             if (!questionState.isAnswerLocked) {
                                 viewModel.saveAnswer(answer.answer_text, answer.is_correct)
+                             //   showFeedback = true // Показываем подсказки и тему
                             }
                         },
                         isAnswerCorrect = isCorrect
@@ -264,15 +269,34 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
                     Icon(imageVector = Icons.Filled.ArrowForward, contentDescription = "Next")
                 }
             }
-
-
-
-
-
-
-
         }
 
+
+        // Показываем комментарий после ответа
+        if (showFeedback) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp)
+            ) {
+                // Комментарий по ответу
+                Text(
+                    text = "Комментарий: ${currentQuestion.answer_tip}",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Normal
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Тема вопроса
+                Text(
+                    text = "Тема: ${currentQuestion.topic.joinToString(", ")}",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Normal
+                )
+            }
+        }
+    }
 
         // Диалоговое окно для увеличенной картинки
         if (isImageFullScreen) {
@@ -332,5 +356,5 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
         }
 
     }
-}
+
 

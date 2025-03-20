@@ -5,9 +5,11 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -20,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -68,67 +71,35 @@ class ExamScreenActivity : ComponentActivity() {
 
 @Composable
 fun ExamScreen(navController: NavController, questionIndex: Int, viewModel: QuestionViewModel) {
+    val timeLeft by viewModel.timeLeft.observeAsState(initial = 3 * 60 * 1000L)
     val questionList = parseJson(context = LocalContext.current) // Загружаем вопросы
 
-    // Таймер (3 минуты)
-    val timerMillis = 3 * 60 * 1000L
-    var timeLeft by remember { mutableStateOf(timerMillis) }
-    var isTimeUp by remember { mutableStateOf(false) }
-    val coroutineScope = rememberCoroutineScope()
-
-    // Запуск таймера
-    LaunchedEffect(Unit) {
-        coroutineScope.launch {
-            while (timeLeft > 0) {
-                delay(1000L)
-                timeLeft -= 1000L
-            }
-            isTimeUp = true
-        }
-    }
+    // Таймер
+    val formattedTime = formatTime(timeLeft)
 
     // Если время вышло или допущено 2 ошибки → завершаем тест
-    if (isTimeUp || viewModel.examWrongAnswersCount >= 2) {
+    if (viewModel.isTimeUp || viewModel.examWrongAnswersCount >= 2) {
         LaunchedEffect(Unit) {
-            // Переход на результат, и удаление всех предыдущих экранов
             navController.navigate("result_screen/${viewModel.correctAnswersCount}") {
-                // Удаляем все экраны, включая экран экзамена, и возвращаемся к экрану результатов
-                popUpTo("exam_screen") { inclusive = true } // Удаляем экран экзамена
+                popUpTo("exam_screen") { inclusive = true }
             }
         }
         return
     }
-
-
-
-
-
-    // Загружаем вопрос
-    LaunchedEffect(questionIndex) {
-        if (viewModel.currentQuestionIndex != questionIndex) {
-            viewModel.saveCurrentQuestionState()
-            viewModel.currentQuestionIndex = questionIndex
-            viewModel.loadQuestionState()
-        }
-    }
-
     val currentQuestion = questionList.getOrNull(viewModel.currentQuestionIndex)
     if (currentQuestion == null) {
         Text(text = "Ошибка загрузки вопроса", fontSize = 24.sp)
         return
     }
-
     var isImageFullScreen by remember { mutableStateOf(false) }
 
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
+    Box(modifier = Modifier.fillMaxSize()) {
         // Фоновое изображение
         Image(
-            painter = painterResource(id = R.drawable.question_background), // Замените на ваш ресурс изображения
+            painter = painterResource(id = R.drawable.question_background),
             contentDescription = null,
             modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop // Масштабирование изображения
+            contentScale = ContentScale.Crop
         )
 
         Column(
@@ -137,10 +108,9 @@ fun ExamScreen(navController: NavController, questionIndex: Int, viewModel: Ques
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
-            // Заголовок: вместо номера билета отображаем таймер
+            // Заголовок с таймером
             Text(
-                text = "Время: ${formatTime(timeLeft)}",
+                text = "Время: $formattedTime",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = if (timeLeft < 60_000L) Color.Red else Color.Black
@@ -216,6 +186,7 @@ fun ExamScreen(navController: NavController, questionIndex: Int, viewModel: Ques
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
             ) {
+                // 🔥 Кнопка "Назад"
                 IconButton(
                     onClick = {
                         if (viewModel.currentQuestionIndex > 0) {
@@ -223,61 +194,51 @@ fun ExamScreen(navController: NavController, questionIndex: Int, viewModel: Ques
                             viewModel.currentQuestionIndex--
                         }
                     },
-                    enabled = viewModel.currentQuestionIndex > 0
+                    enabled = viewModel.currentQuestionIndex > 0,
+                    modifier = Modifier
+                        .background(
+                            Color.Gray.copy(alpha = 0.4f),
+                            shape = RoundedCornerShape(10)
+                        ) // Полупрозрачная обводка
+                        .padding(4.dp) // Паддинг вокруг иконки
                 ) {
                     Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Previous")
                 }
-
-                if (viewModel.allQuestionsAnswered()) {
-                    IconButton(
-                        onClick = {
-                            navController.navigate("result_screen/${viewModel.correctAnswersCount}")
-                        }
-                    ) {
-                        Icon(imageVector = Icons.Filled.Check, contentDescription = "Finish")
-                    }
-                } else {
-                    IconButton(
-                        onClick = {
-                            viewModel.saveCurrentQuestionState()
-                            viewModel.moveToNextQuestion()
-                            navController.navigate("exam_screen/${viewModel.currentQuestionIndex}") {
-                                launchSingleTop = true
-                            }
-                        }
-                    ) {
-                        Icon(imageVector = Icons.Filled.ArrowForward, contentDescription = "Next")
-                    }
+                // Кнопка "Завершить тест"
+                IconButton(
+                    onClick = {
+                        // Переход на экран с результатами
+                        navController.navigate("result_screen/${viewModel.correctAnswersCount}")
+                    },
+                    modifier = Modifier
+                        .background(Color.Gray.copy(alpha = 0.4f), shape = RoundedCornerShape(10))
+                        .padding(4.dp)
+                ) {
+                    Icon(imageVector = Icons.Filled.Check, contentDescription = "Finish Test")
                 }
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // ✅ Кнопка "Выйти в меню"
-            Button(
-                onClick = {
-                    navController.navigate("main_screen") {
-                        popUpTo("main_screen") { inclusive = true } // Удаляем все экраны сверху
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)
-            ) {
-                Text(
-                    text = "Выйти в меню",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
+                // Кнопка "Вперед"
+                IconButton(
+                    onClick = {
+                        viewModel.saveCurrentQuestionState()
+                        viewModel.moveToNextQuestion()
+                        navController.navigate("question_screen/${viewModel.currentQuestionIndex}") {
+                            launchSingleTop = true
+                        }
+                    },
+                    modifier = Modifier
+                        .background(Color.Gray.copy(alpha = 0.4f), shape = RoundedCornerShape(10))
+                        .padding(4.dp)
+                ) {
+                    Icon(imageVector = Icons.Filled.ArrowForward, contentDescription = "Next")
+                }
             }
 
         }
     }
 }
 
-// Функция для форматирования оставшегося времени (минуты:секунды)
+// Функция для форматирования оставшегося времени
 fun formatTime(millis: Long): String {
     val minutes = (millis / 1000) / 60
     val seconds = (millis / 1000) % 60
