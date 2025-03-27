@@ -13,15 +13,15 @@ import kotlinx.coroutines.flow.map
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "favorite_tickets")
 
 class FavoriteTicketsManager(private val context: Context) {
-
     // Используем stringSetPreferencesKey
     private val favoriteTicketsKey = stringSetPreferencesKey("favorite_tickets")
-
     // Получить список избранных билетов
+
     val favoriteTickets: Flow<Set<String>> = context.dataStore.data
         .map { preferences ->
             preferences[favoriteTicketsKey] ?: emptySet()
         }
+
 
     // Добавить билет в избранное
     suspend fun addFavoriteTicket(ticketNumber: String) {

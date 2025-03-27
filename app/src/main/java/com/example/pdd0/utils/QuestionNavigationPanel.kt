@@ -32,7 +32,8 @@ import com.example.pdd0.parser.parseJson
 
 @Composable
 fun QuestionNavigationPanel(
-    navController: NavController, viewModel: QuestionViewModel
+    navController: NavController, viewModel: QuestionViewModel, screenRoute: String = "question_screen"
+
 //    screenRoute: String = "question_screen" // ✅ Дефолтное значение - обычный режим
 ) {
     var isPaused by remember { mutableStateOf(false) } // Отслеживаем состояние паузы
@@ -45,20 +46,30 @@ fun QuestionNavigationPanel(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Кнопка Play/Pause
-        IconButton(onClick = {
-            isPaused = !isPaused // Переключаем состояние
-            showPauseDialog = isPaused // Показываем диалог только при нажатии на паузу
-        }) {
+
+        // Pause/Play button
+        IconButton(
+            onClick = {
+                isPaused = !isPaused // Переключаем состояние
+                if (isPaused) {
+                    viewModel.pauseTimer() // Пауза таймера
+                    showPauseDialog = true // Показываем диалог с паузой
+                } else {
+                    viewModel.resumeTimer() // Возобновляем таймер
+                    showPauseDialog = false // Скрываем диалог
+                }
+            }
+        ) {
             Icon(
                 imageVector = if (isPaused) Icons.Filled.PlayArrow else Icons.Filled.Pause,
                 contentDescription = if (isPaused) "Play" else "Pause"
             )
         }
 
-        val baseIndex = (viewModel.currentQuestionIndex / 10) * 10 // Определяем первый вопрос текущего билета
+        val baseIndex =
+            (viewModel.currentQuestionIndex / 10) * 10 // Определяем первый вопрос текущего билета
 
-        ( 0..9).forEach { offset ->
+        (0..9).forEach { offset ->
             val questionIndex = baseIndex + offset
             val questionState = viewModel.questionStates[questionIndex]
 
@@ -74,12 +85,18 @@ fun QuestionNavigationPanel(
                     .padding(2.dp)
                     .clickable {
                         viewModel.saveCurrentQuestionState()
+
+                        // Проверяем, если мы находимся на экране экзамена, то переходим на exam_screen, иначе остаёмся на question_screen
                         if (viewModel.currentQuestionIndex != questionIndex) {
                             viewModel.currentQuestionIndex = questionIndex
                             viewModel.loadQuestionState()
                         }
 
-                        navController.navigate("question_screen/$questionIndex") {
+                        // Проверяем, если текущий экран exam_screen, то переходим на exam_screen
+                        val nextScreenRoute = if (screenRoute == "exam_screen") "exam_screen" else "question_screen"
+
+                        // Навигация с передачей индекса вопроса и экрана
+                        navController.navigate("$nextScreenRoute/$questionIndex/$screenRoute") {
                             launchSingleTop = true
                         }
                     }
@@ -96,11 +113,10 @@ fun QuestionNavigationPanel(
                     fontWeight = if (viewModel.currentQuestionIndex == questionIndex) FontWeight.Bold else FontWeight.Normal
                 )
             }
+
         }
     }
-
-
-    // Диалог с вариантами действий
+            // Диалог с вариантами действий
     if (showPauseDialog) {
         val context = LocalContext.current
         val questionList = parseJson(context) // ✅ Загружаем список вопросов
@@ -111,6 +127,7 @@ fun QuestionNavigationPanel(
             onResume = {
                 showPauseDialog = false
                 isPaused = false // Автоматически меняем иконку на паузу при закрытии диалога
+                viewModel.resumeTimer() // Возобновляем таймер
             },
             onGoHome = {
                 showPauseDialog = false

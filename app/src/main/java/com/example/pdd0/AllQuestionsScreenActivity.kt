@@ -26,10 +26,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.*
@@ -57,9 +59,10 @@ class AllQuestionsScreenActivity : ComponentActivity() {
                 composable("all_questions_screen") {
                     AllQuestionsScreen(navController, questionViewModel, questionList)
                 }
-                composable("question_screen/{ticketNumber}") { backStackEntry ->
+                composable("question_screen/{ticketNumber}/{screenRoute}") { backStackEntry ->
                     val ticketNumber = backStackEntry.arguments?.getString("ticketNumber")?.toIntOrNull() ?: 1
-                    QuestionScreen(navController, ticketNumber, questionViewModel) // ✅ Передаём ViewModel
+                    val screenRoute = backStackEntry.arguments?.getString("screenRoute") ?: "question_screen" // Default to exam_screen
+                    QuestionScreen(navController, ticketNumber, questionViewModel, screenRoute)
                 }
 
 
@@ -76,12 +79,22 @@ fun AllQuestionsScreen(navController: NavController, viewModel: QuestionViewMode
     val context = LocalContext.current
     var filteredTickets by remember { mutableStateOf(questionList.map { it.ticket_number }) } // ✅ Теперь сразу содержит все билеты
 
+
+
+    // Сортируем билеты по номеру (преобразуем их в числа)
+    filteredTickets = filteredTickets
+        .distinct()
+        .sortedBy { it.toIntOrNull() ?: Int.MAX_VALUE }  // Сортируем по числовому значению билета
+
+
+
+
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
         // Фоновое изображение
         Image(
-            painter = painterResource(id = R.drawable.favorite_background), // Замените на ваш ресурс изображения
+            painter = painterResource(id = R.drawable.main_background), // Замените на ваш ресурс изображения
             contentDescription = null,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop // Масштабирование изображения
@@ -117,7 +130,15 @@ fun AllQuestionsScreen(navController: NavController, viewModel: QuestionViewMode
                 // ✅ Отображаем найденные билеты с увеличенным расстоянием и разделяющей полосой
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     items(filteredTickets) { ticketNumber ->
-                        TicketItem(ticketNumber, questionList, navController, viewModel)
+//                        val correctAnswers = 9 // Здесь вычисляете количество правильных ответов для данного билета (например, из ViewModel)
+                            TicketItem(
+//                                correctAnswersCount = correctAnswers,
+                                ticketNumber = ticketNumber,
+                                questionList = questionList,
+                                navController = navController,
+                                viewModel = viewModel
+                            )
+
 
                         // Разделитель после каждого билета
                         HorizontalDivider(
@@ -126,6 +147,7 @@ fun AllQuestionsScreen(navController: NavController, viewModel: QuestionViewMode
                             thickness = 1.dp // Толщина разделителя
 
                         )
+
                     }
 
             }
@@ -137,15 +159,7 @@ fun AllQuestionsScreen(navController: NavController, viewModel: QuestionViewMode
 fun TicketItem(ticketNumber: String, questionList: List<Question>, navController: NavController, viewModel: QuestionViewModel) {
     val favoriteTickets by viewModel.favoriteTickets.collectAsState() // ✅ Следим за избранными билетами
     val isFavorite = favoriteTickets.contains(ticketNumber) // ✅ Проверяем статус билета
-    val ticketProgress = viewModel.getTicketProgress(ticketNumber) // Получаем прогресс для билета
-
-    // Получаем список вопросов для текущего билета
-    val ticketQuestions = questionList.filter { it.ticket_number == ticketNumber }
-
-    // Определяем цвет прогресс-бара: зеленый, если прогресс больше 0, красный, если меньше
-    val progressColor = if (ticketProgress == 1f) Color.Green else if (ticketProgress > 0f) Color.Yellow else Color.Red
-
-
+//    val resultText = "$correctAnswersCount/10"
 
     Row(
         modifier = Modifier
@@ -156,7 +170,7 @@ fun TicketItem(ticketNumber: String, questionList: List<Question>, navController
 
                 if (firstQuestionIndex != -1) {
                     Log.d("TicketItem", "Открываю билет: $ticketNumber, Первый вопрос: $firstQuestionIndex")
-                    navController.navigate("question_screen/$firstQuestionIndex") // ✅ Передаём правильный индекс
+                    navController.navigate("question_screen/$firstQuestionIndex/exam_screen") // Передаем индекс и режим
                 } else {
                     Log.e("TicketItem", "Ошибка: Вопросы для билета $ticketNumber не найдены")
                 }
@@ -169,19 +183,6 @@ fun TicketItem(ticketNumber: String, questionList: List<Question>, navController
             modifier = Modifier.weight(1f) // Закрашенная рамка
 
         )
-
-        LinearProgressIndicator(
-            progress = {
-                ticketProgress  // Прогресс из ViewModel
-            },
-            modifier = Modifier
-                .width(200.dp)
-                .height(4.dp)
-                .padding(horizontal = 8.dp),
-            color = Color.Green,
-            trackColor = Color.LightGray,
-        )
-
 
         // ✅ Кликабельная звезда для добавления/удаления из избранного
         IconButton(

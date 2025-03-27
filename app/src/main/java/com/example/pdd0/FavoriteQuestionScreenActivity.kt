@@ -132,8 +132,8 @@ fun FavoriteTicketItem(ticketNumber: String, questionList: List<Question>, navCo
                 val firstQuestionIndex = allQuestions.indexOfFirst { it.ticket_number == ticketNumber }
 
                 if (firstQuestionIndex != -1) {
-                    Log.d("FavoriteTicketItem", "Открываю избранный билет: $ticketNumber, Первый вопрос: $firstQuestionIndex")
-                    navController.navigate("question_screen/$firstQuestionIndex") // ✅ Передаём правильный индекс
+                    // Передаем правильный индекс и режим
+                    navController.navigate("question_screen/$firstQuestionIndex/exam_screen") // Передаем индекс и режим
                 } else {
                     Log.e("FavoriteTicketItem", "Ошибка: Вопросы для билета $ticketNumber не найдены")
                 }

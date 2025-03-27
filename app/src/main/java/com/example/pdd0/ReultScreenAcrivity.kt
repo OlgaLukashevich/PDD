@@ -42,7 +42,6 @@ fun ResultScreen(correctAnswersCount: Int, totalQuestions: Int, navController: N
     val favoriteTickets by viewModel.favoriteTickets.collectAsState() // ✅ Следим за избранными билетами
     val isFavorite = favoriteTickets.contains(currentTicketNumber) // ✅ Проверяем, в избранном ли билет
 
-    val ticketProgress = viewModel.getTicketProgress("1") // Получаем прогресс для билета 1 (или другого билета)
 
     // Определяем сообщение в зависимости от количества правильных ответов
     val resultMessage = when {
@@ -110,10 +109,9 @@ fun ResultScreen(correctAnswersCount: Int, totalQuestions: Int, navController: N
             // 🔥 Кнопка "Пройти заново"
             Button(
                 onClick = {
-                    viewModel.resetTest() // ✅ Сбрасываем тест перед навигацией
-                    val restartIndex =
-                        viewModel.currentTicketStartIndex // ✅ Используем запомненный билет
-                    navController.navigate("question_screen/$restartIndex") {
+                    viewModel.resetTest() // Сбрасываем тест перед навигацией
+                    val restartIndex = viewModel.currentTicketStartIndex // Используем запомненный стартовый индекс билета
+                    navController.navigate("question_screen/$restartIndex/exam_screen") { // Переход на экран вопроса с указанным индексом и режимом "exam_screen"
                         popUpTo("main_screen") { inclusive = false } // ✅ Удаляем старые экраны
                     }
                 },
@@ -135,7 +133,7 @@ fun ResultScreen(correctAnswersCount: Int, totalQuestions: Int, navController: N
             Button(
                 onClick = {
                     viewModel.loadRandomTicket()
-                    navController.navigate("question_screen/${viewModel.currentQuestionIndex}") {
+                    navController.navigate("question_screen/${viewModel.currentQuestionIndex}/exam_screen") { // Переход на новый случайный билет с режимом "exam_screen"
                         popUpTo("main_screen") // Удаляем предыдущие экраны
                     }
                 },
@@ -150,6 +148,30 @@ fun ResultScreen(correctAnswersCount: Int, totalQuestions: Int, navController: N
             ) {
                 Text("Следующий билет", fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Кнопка "Все билеты"
+            Button(
+                onClick = {
+                    viewModel.resetTest() // ✅ Добавляем сброс состояния теста
+                    navController.navigate("all_questions_screen") {
+                        popUpTo("main_screen") { inclusive = true } // ✅ Удаляем все предыдущие экраны
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF7EB9A4), // Более темный серый
+                    contentColor = Color.White
+                ),
+                shape = RoundedCornerShape(12.dp) // Скругленные углы
+            ) {
+                Text("Все билеты", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            }
+
+
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -172,6 +194,10 @@ fun ResultScreen(correctAnswersCount: Int, totalQuestions: Int, navController: N
             ) {
                 Text("Главная", fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
+
+
+
+
 
         }
     }

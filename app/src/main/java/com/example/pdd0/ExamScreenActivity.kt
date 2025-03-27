@@ -51,10 +51,12 @@ class ExamScreenActivity : ComponentActivity() {
             NavHost(navController = navController, startDestination = "main_screen") {
                 composable("main_screen") { MainScreen(navController, questionViewModel, questionList) }
 
-                composable("exam_screen/{questionIndex}") { backStackEntry ->
+                composable("exam_screen/{questionIndex}/{screenRoute}") { backStackEntry ->
                     val questionIndex = backStackEntry.arguments?.getString("questionIndex")?.toIntOrNull() ?: 0
-                    ExamScreen(navController, questionIndex, questionViewModel)
+                    val screenRoute = backStackEntry.arguments?.getString("screenRoute") ?: "exam_screen"
+                    ExamScreen(navController, questionIndex, questionViewModel, screenRoute)
                 }
+
 
                 composable("all_questions_screen") {
                     AllQuestionsScreen(navController, questionViewModel, questionList)
@@ -70,22 +72,27 @@ class ExamScreenActivity : ComponentActivity() {
 
 
 @Composable
-fun ExamScreen(navController: NavController, questionIndex: Int, viewModel: QuestionViewModel) {
+fun ExamScreen(navController: NavController, questionIndex: Int, viewModel: QuestionViewModel, screenRoute: String) {
     val timeLeft by viewModel.timeLeft.observeAsState(initial = 3 * 60 * 1000L)
     val questionList = parseJson(context = LocalContext.current) // Загружаем вопросы
 
     // Таймер
     val formattedTime = formatTime(timeLeft)
 
+
+
     // Если время вышло или допущено 2 ошибки → завершаем тест
     if (viewModel.isTimeUp || viewModel.examWrongAnswersCount >= 2) {
         LaunchedEffect(Unit) {
             navController.navigate("result_screen/${viewModel.correctAnswersCount}") {
-                popUpTo("exam_screen") { inclusive = true }
+               popUpTo("exam_screen") { inclusive = true }
             }
         }
         return
     }
+
+
+
     val currentQuestion = questionList.getOrNull(viewModel.currentQuestionIndex)
     if (currentQuestion == null) {
         Text(text = "Ошибка загрузки вопроса", fontSize = 24.sp)
@@ -116,7 +123,13 @@ fun ExamScreen(navController: NavController, questionIndex: Int, viewModel: Ques
                 color = if (timeLeft < 60_000L) Color.Red else Color.Black
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+            // Панель навигации
+            //QuestionNavigationPanel(navController, viewModel)
+            QuestionNavigationPanel(navController, viewModel, screenRoute = "exam_screen")
+
+            Spacer(modifier = Modifier.height(8.dp))
+
 
             // Вопрос и варианты ответов
             Text(text = currentQuestion.question, fontSize = 20.sp, fontWeight = FontWeight.Bold)
@@ -222,7 +235,7 @@ fun ExamScreen(navController: NavController, questionIndex: Int, viewModel: Ques
                     onClick = {
                         viewModel.saveCurrentQuestionState()
                         viewModel.moveToNextQuestion()
-                        navController.navigate("question_screen/${viewModel.currentQuestionIndex}") {
+                        navController.navigate("exam_screen/${viewModel.currentQuestionIndex}/exam_screen") { // Передаем оба параметра
                             launchSingleTop = true
                         }
                     },

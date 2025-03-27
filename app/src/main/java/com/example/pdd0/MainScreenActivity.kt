@@ -45,22 +45,21 @@ class MainScreenActivity : ComponentActivity() {
                 factory = QuestionViewModelFactory(favoriteTicketsManager)
             )
             val questionList = parseJson(LocalContext.current)
-
-
             NavHost(navController = navController, startDestination = "main_screen") {
                 composable("main_screen") {
                     MainScreen(navController, questionViewModel, questionList)
                 }
-//                composable("question_screen") { QuestionScreen(navController) }
-// Это правильный маршрут с передачей параметра индекса
-                composable("question_screen/{questionIndex}") { backStackEntry ->
+
+                composable("question_screen/{questionIndex}/{screenRoute}") { backStackEntry ->
                     val questionIndex = backStackEntry.arguments?.getString("questionIndex")?.toIntOrNull() ?: 0
-                    QuestionScreen(navController = navController, questionIndex, questionViewModel)
+                    val screenRoute = backStackEntry.arguments?.getString("screenRoute") ?: "question_screen"
+                    QuestionScreen(navController = navController, questionIndex, questionViewModel, screenRoute)
                 }
+
                 composable("favorite_question_screen") {
                     FavoriteQuestionScreen(
                         navController = navController,
-                        viewModel = questionViewModel // ✅ Передаём правильное имя ViewModel
+                        viewModel = questionViewModel //  Передаём имя ViewModel
                     )
                 }
 
@@ -68,9 +67,10 @@ class MainScreenActivity : ComponentActivity() {
                     AllQuestionsScreen(navController = navController, questionViewModel, questionList) // ✅ Передаём viewModel
                 }
 
-                composable("exam_screen/{questionIndex}") { backStackEntry ->
+                composable("exam_screen/{questionIndex}/{screenRoute}") { backStackEntry ->
                     val questionIndex = backStackEntry.arguments?.getString("questionIndex")?.toIntOrNull() ?: 0
-                    ExamScreen(navController = navController, questionIndex, questionViewModel)
+                    val screenRoute = backStackEntry.arguments?.getString("screenRoute") ?: "exam_screen"
+                    ExamScreen(navController, questionIndex, questionViewModel, screenRoute)
                 }
 
 
@@ -178,27 +178,23 @@ fun MainScreen(navController: NavController, questionViewModel: QuestionViewMode
             onClick = {
                 when (text) {
                     "Случайный билет" -> {
-                        val randomTicket = (0 until 40).random() * 10 // ✅ Выбираем случайный билет
+                        val randomTicket = (0 until 40).random() * 10 // Выбираем случайный билет
                         viewModel.currentTicketStartIndex =
-                            randomTicket // ✅ Запоминаем его стартовый индекс
+                            randomTicket // Запоминаем его стартовый индекс
                         viewModel.currentQuestionIndex =
-                            randomTicket // ✅ Ставим первый вопрос случайного билета
-                        navController.navigate("question_screen/$randomTicket")
+                            randomTicket // Ставим первый вопрос случайного билета
+                        navController.navigate("question_screen/$randomTicket/question_screen") //
                     }
-
-
                     "Все билеты" -> {
                         navController.navigate("all_questions_screen") // ✅ Если в NavHost передан viewModel, всё будет работать
                     }
-
                     "Избранные билеты" -> navController.navigate("favorite_question_screen")
                     "Экзамен" -> {
                         viewModel.loadRandomTicket() // ✅ Загружаем случайный билет
                         val startIndex =
                             viewModel.currentQuestionIndex // ✅ Берём индекс первого вопроса билета
-                        navController.navigate("exam_screen/$startIndex") // ✅ Передаём индекс в навигацию
+                        navController.navigate("exam_screen/$startIndex/exam_screen") // ✅ Передаём индекс в навигацию
                     }
-
                 }
                 isPressed = !isPressed // Изменяем состояние при нажатии
             },

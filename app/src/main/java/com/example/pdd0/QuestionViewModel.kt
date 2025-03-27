@@ -10,6 +10,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.pdd0.dataClass.Question
 import com.example.pdd0.dataClass.QuestionState
 import com.example.pdd0.dataStore.FavoriteTicketsManager
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,9 +22,9 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
     var currentQuestionIndex by mutableStateOf(0)
     var isTestFinished by mutableStateOf(false)
     var questionStates = mutableStateMapOf<Int, QuestionState>()
-    var correctAnswersCount by mutableStateOf(0) // ✅ Счётчик правильных ответов
-    var currentTicketStartIndex by mutableStateOf(0) // ✅ Сохраняем первый вопрос текущего билета
-    // ✅ Добавляем отдельный счетчик ошибок для экзамена
+    var correctAnswersCount by mutableStateOf(0) //  Счётчик правильных ответов
+    var currentTicketStartIndex by mutableStateOf(0) //  Сохраняем первый вопрос текущего билета
+    //  отдельный счетчик ошибок для экзамена
     var examWrongAnswersCount by mutableStateOf(0)
         private set
     private val _ticketProgress = mutableStateMapOf<String, Float>()
@@ -38,22 +39,43 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
     val timeLeft: LiveData<Long> get() = _timeLeft
 
     var isTimeUp by mutableStateOf(false) // Для отслеживания, когда таймер истечет
+    private var isTimerPaused by mutableStateOf(false) // Track the pause state of the timer
+    private var timerJob: Job? = null // Coroutine job to manage the timer
+
 
     // Начальная длительность таймера (3 минуты)
     init {
-        _timeLeft.value = 3 * 60 * 1000L
+        _timeLeft.value = 5 * 60 * 1000L
         startTimer()
     }
 
     private fun startTimer() {
-        viewModelScope.launch {
-            while (_timeLeft.value!! > 0) {
-                delay(1000L) // Каждую секунду уменьшаем время
+        timerJob = viewModelScope.launch {
+            while (_timeLeft.value!! > 0 && !isTimerPaused) {
+                delay(1000L) // уменьшать время каждую секунду
                 _timeLeft.value = _timeLeft.value!! - 1000L
             }
-            isTimeUp = true
+            if (_timeLeft.value!! <= 0) {
+                isTimeUp = true
+            }
         }
     }
+
+    // Пауза таймера
+    fun pauseTimer() {
+        isTimerPaused = true
+        timerJob?.cancel() // Останавливаем текущий корутин
+    }
+
+    // Возобновить таймер
+    fun resumeTimer() {
+        if (isTimerPaused) {
+            isTimerPaused = false // Снимаем паузу
+            startTimer() // Таймер продолжит отсчет с того места, где был приостановлен
+        }
+    }
+
+
 
 
 
@@ -63,7 +85,11 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
     fun getCurrentQuestionState(): QuestionState {
         return questionStates[currentQuestionIndex] ?: QuestionState(null, false, false)
     }
+
+
     fun saveAnswer(answerText: String, isCorrect: Boolean) {
+        Log.d("TicketProgress", "currentQuestionIndex: $currentQuestionIndex")
+
         val currentState = questionStates[currentQuestionIndex] ?: QuestionState(null, false, false)
         questionStates[currentQuestionIndex] = currentState.copy(
             selectedAnswer = answerText,
@@ -73,18 +99,34 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
 
         // ✅ Обновляем количество правильных ответов
         correctAnswersCount = questionStates.values.count { it.isAnswerCorrect }
+
+
+
         checkTestCompletion() // 🔥 Проверяем, завершён ли тест после ответа
     }
 
 
 
-    fun loadQuestions(questionList: List<Question>) {
-        Log.d("QuestionViewModel", "Загружаем вопросы: ${questionList.size}")
-        if (questionList.isEmpty()) {
-            Log.e("QuestionViewModel", "Ошибка: список вопросов пуст")
-        }
-        this.questionList = questionList
+
+
+    fun getCurrentTicketNumber(questionList: List<Question>): String {
+        val currentQuestion = questionList.getOrNull(currentQuestionIndex)
+        return currentQuestion?.ticket_number ?: "Неизвестный билет - $currentQuestionIndex" // Логируем индекс вопроса
     }
+
+
+
+
+    fun getTestProgress(): Float {
+        val totalQuestions = questionStates.size
+        return if (totalQuestions > 0) {
+            correctAnswersCount.toFloat() / totalQuestions
+        } else {
+            0f
+        }
+    }
+
+
 
 
     fun loadQuestionState() {
@@ -153,22 +195,6 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
     }
 
 
-    fun loadSpecificTicket(ticketIndex: Int) {
-        questionStates.clear()
-        correctAnswersCount = 0
-        isTestFinished = false
-
-        lastTicketStartIndex = ticketIndex // ✅ Запоминаем первый вопрос билета
-        currentQuestionIndex = ticketIndex
-    }
-
-
-    fun getCurrentTicketNumber(questionList: List<Question>): String {
-        val currentQuestion = questionList.getOrNull(currentQuestionIndex)
-        return currentQuestion?.ticket_number ?: "Билет ?"
-    }
-
-
 
 
     // Используем FavoriteTicketsManager для управления избранными билетами
@@ -210,15 +236,6 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
         examWrongAnswersCount++
     }
 
-    fun getTicketProgress(ticketNumber: String): Float {
-        // Фильтруем вопросы для текущего билета
-        val ticketQuestions = questionStates.filter { it.key.toString() == ticketNumber }
-
-        // Рассчитываем прогресс, используя количество правильных ответов
-        val answeredQuestionsCount = ticketQuestions.count { it.value.isAnswerCorrect }
-        val totalQuestionsCount = ticketQuestions.size
-        return if (totalQuestionsCount > 0) answeredQuestionsCount.toFloat() / totalQuestionsCount else 0f
-    }
 
 
 

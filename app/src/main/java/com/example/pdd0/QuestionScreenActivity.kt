@@ -56,13 +56,13 @@ class QuestionScreenActivity : ComponentActivity() {
 
             NavHost(navController = navController, startDestination = "main_screen") {
                 composable("main_screen") { MainScreen(navController, questionViewModel,questionList) }
-                composable("question_screen/{questionIndex}") { backStackEntry ->
-                // Извлекаем индекс вопроса из аргументов
-                    val questionIndex = backStackEntry.arguments?.getString("questionIndex")?.toIntOrNull() ?: 1
-                    QuestionScreen(navController, questionIndex - 1, questionViewModel) // Передаем ViewModel
+                composable("question_screen/{questionIndex}/{screenRoute}") { backStackEntry ->
+                    val questionIndex = backStackEntry.arguments?.getString("questionIndex")?.toIntOrNull() ?: 0
+                    val screenRoute = backStackEntry.arguments?.getString("screenRoute") ?: "question_screen"
+                    QuestionScreen(navController, questionIndex - 1, questionViewModel, screenRoute)
                 }
                 composable("all_questions_screen") {
-                    AllQuestionsScreen(navController = navController, questionViewModel,questionList) // ✅ Передаём viewModel
+                    AllQuestionsScreen(navController = navController, questionViewModel,questionList)
                 }
                 composable("favorite_question_screen") {
                     FavoriteQuestionScreen(navController, questionViewModel)
@@ -73,8 +73,20 @@ class QuestionScreenActivity : ComponentActivity() {
 }
 
 @Composable
-fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: QuestionViewModel) {
+fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: QuestionViewModel, screenRoute: String) {
     val questionList = parseJson(context = LocalContext.current) // Загрузка вопросов
+    // ✅ Получаем количество правильных ответов из ViewModel
+    val correctAnswersCount = viewModel.correctAnswersCount
+
+
+    if (viewModel.isTestFinished) {
+        LaunchedEffect(Unit) {
+            navController.navigate("result_screen/$correctAnswersCount")
+        }
+        return
+    }
+
+
 
 
     // При изменении индекса загружаем состояние ВьюМодели
@@ -94,8 +106,6 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
         Text(text = "Ошибка загрузки вопроса", fontSize = 24.sp)
         return
     }
-    // ✅ Получаем количество правильных ответов из ViewModel
-    val correctAnswersCount = viewModel.correctAnswersCount
 
     // ✅ Если тест завершён, переходим к экрану результата, передавая `correctAnswersCount`
     if (viewModel.isTestFinished) {
@@ -258,7 +268,12 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
                     onClick = {
                         viewModel.saveCurrentQuestionState()
                         viewModel.moveToNextQuestion()
-                        navController.navigate("question_screen/${viewModel.currentQuestionIndex}") {
+
+                        // Определение маршрута на основе текущего состояния
+                        val nextScreenRoute = if (screenRoute == "exam_screen") "exam_screen" else "question_screen"
+
+                        // Переход с передачей параметров в соответствии с NavGraph
+                        navController.navigate("question_screen/${viewModel.currentQuestionIndex}/$nextScreenRoute") {
                             launchSingleTop = true
                         }
                     },
@@ -268,6 +283,8 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
                 ) {
                     Icon(imageVector = Icons.Filled.ArrowForward, contentDescription = "Next")
                 }
+
+
             }
         }
 
