@@ -46,7 +46,7 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
     // Начальная длительность таймера (3 минуты)
     init {
         _timeLeft.value = 5 * 60 * 1000L
-        startTimer()
+
     }
 
     private fun startTimer() {
@@ -72,11 +72,24 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
         if (isTimerPaused) {
             isTimerPaused = false // Снимаем паузу
             startTimer() // Таймер продолжит отсчет с того места, где был приостановлен
+
         }
     }
 
+    fun resetTimerToInitial() {
+        // Сбрасываем таймер на начальное значение (например, 5 минут)
+        _timeLeft.value = 5 * 60 * 1000L // 5 минут в миллисекундах
+
+        pauseTimer()
+        resetExamCounters()
+    }
 
 
+    // Метод для сброса счетчика ошибок
+    fun resetExamCounters() {
+        examWrongAnswersCount = 0 // Сбрасываем количество ошибок
+        isTimeUp = false // Сбрасываем таймер
+    }
 
 
    // var showFavoriteMessage by mutableStateOf(false)

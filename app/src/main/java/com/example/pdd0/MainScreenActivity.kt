@@ -173,7 +173,7 @@ fun MainScreen(navController: NavController, questionViewModel: QuestionViewMode
     @Composable
     fun MenuButton(text: String, navController: NavController, viewModel: QuestionViewModel) {
         var isPressed by remember { mutableStateOf(false) } // Состояние кнопки
-
+        viewModel.pauseTimer()
         Button(
             onClick = {
                 when (text) {
@@ -193,8 +193,9 @@ fun MainScreen(navController: NavController, questionViewModel: QuestionViewMode
                         viewModel.loadRandomTicket() // ✅ Загружаем случайный билет
                         val startIndex =
                             viewModel.currentQuestionIndex // ✅ Берём индекс первого вопроса билета
-                        navController.navigate("exam_screen/$startIndex/exam_screen") // ✅ Передаём индекс в навигацию
-                    }
+                        navController.navigate("exam_screen/$startIndex/exam_screen")
+
+                                            }
                 }
                 isPressed = !isPressed // Изменяем состояние при нажатии
             },

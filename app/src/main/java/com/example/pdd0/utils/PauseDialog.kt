@@ -75,6 +75,7 @@ fun PauseDialog(
                     TextButton(
                         onClick = {
                             navController.navigate("main_screen") // Переход на главный экран
+                            viewModel.resetTimerToInitial()
                         },
                         modifier = Modifier.fillMaxWidth() // Кнопка на всю ширину
                     ) {

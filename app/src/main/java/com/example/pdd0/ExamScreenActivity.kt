@@ -76,20 +76,32 @@ fun ExamScreen(navController: NavController, questionIndex: Int, viewModel: Ques
     val timeLeft by viewModel.timeLeft.observeAsState(initial = 3 * 60 * 1000L)
     val questionList = parseJson(context = LocalContext.current) // Загружаем вопросы
 
+    // Запуск таймера только при переходе на экран экзамена
+    LaunchedEffect(Unit) {
+        viewModel.resumeTimer()  // Таймер возобновляется при переходе на экран экзамена
+       // viewModel.resetExamCounters()
+    }
+
     // Таймер
     val formattedTime = formatTime(timeLeft)
 
 
 
-    // Если время вышло или допущено 2 ошибки → завершаем тест
+
+// Если время вышло или допущено 2 ошибки → завершаем тест
     if (viewModel.isTimeUp || viewModel.examWrongAnswersCount >= 2) {
         LaunchedEffect(Unit) {
+            // Сбрасываем счетчик ошибок и таймер перед переходом на экран с результатами
+            viewModel.resetExamCounters()
+
+            // Переход на экран результатов, при этом удаляя экран экзамена из стека
             navController.navigate("result_screen/${viewModel.correctAnswersCount}") {
-               popUpTo("exam_screen") { inclusive = true }
+                popUpTo("exam_screen") { inclusive = true } // Удаление экзамена из стека
             }
         }
         return
     }
+
 
 
 
@@ -222,6 +234,7 @@ fun ExamScreen(navController: NavController, questionIndex: Int, viewModel: Ques
                     onClick = {
                         // Переход на экран с результатами
                         navController.navigate("result_screen/${viewModel.correctAnswersCount}")
+                        viewModel.resetTimerToInitial()
                     },
                     modifier = Modifier
                         .background(Color.Gray.copy(alpha = 0.4f), shape = RoundedCornerShape(10))
