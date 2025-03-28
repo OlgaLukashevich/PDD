@@ -87,6 +87,12 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
 
 
     if (viewModel.isTestFinished) {
+        // Сброс всех состояний комментариев
+        viewModel.resetCommentStates()
+
+        // Обнуляем showExplanation для всех вопросов
+        viewModel.isCommentVisible.value = false // Отключаем отображение комментариев
+
         LaunchedEffect(Unit) {
             navController.navigate("result_screen/$correctAnswersCount")
         }
@@ -228,6 +234,7 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
 
                                 // Если ответ неправильный, показываем подсказку
                                 if (!answer.is_correct) {
+                                    viewModel.isCommentVisible.value = true
                                     explanationText = currentQuestion.answer_tip
                                 }
                             }
@@ -267,6 +274,11 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
                 // Кнопка "Завершить тест"
                 IconButton(
                     onClick = {
+                        // Сбрасываем комментарии при завершении теста
+                        viewModel.resetCommentStates()
+
+                        // Обнуляем showExplanation для всех вопросов
+                        viewModel.isCommentVisible.value = false // Отключаем отображение комментариев
                         // Переход на экран с результатами
                         navController.navigate("result_screen/${viewModel.correctAnswersCount}")
                     },
@@ -304,26 +316,22 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
         }
 
         var offset by remember { mutableStateOf(Offset(0f, 0f)) }
-        var showExplanation by remember { mutableStateOf(true) } // Состояние для отображения комментария
-
+        var showExplanation by remember { mutableStateOf(false) } // Показывать пояснение
 
         // Показываем комментарий только если текущий вопрос неправильный
-        if (viewModel.incorrectQuestions.contains(viewModel.currentQuestionIndex)) {
-            // Получаем состояние комментария для конкретного вопроса
-            val showExplanation = viewModel.getCommentStateForQuestion(viewModel.currentQuestionIndex)
+        if (viewModel.incorrectQuestions.contains(viewModel.currentQuestionIndex) && viewModel.isCommentVisible.value) {
+           val showExplanation = viewModel.getCommentStateForQuestion(viewModel.currentQuestionIndex)
 
+            // Показываем Box только если комментарий активен
             if (showExplanation) {
                 Box(
                     modifier = Modifier
-                        .offset { IntOffset(offset.x.roundToInt(), offset.y.roundToInt()) } // Используем offset для перемещения
+                        .offset { IntOffset(offset.x.roundToInt(), offset.y.roundToInt()) }
                         .pointerInput(Unit) {
-                            detectDragGestures { _, dragAmount ->
-                                // Обновляем позицию подсказки при перетаскивании
-                                offset = Offset(offset.x + dragAmount.x, offset.y + dragAmount.y)
-                            }
+                            detectDragGestures { _, dragAmount -> offset = Offset(offset.x + dragAmount.x, offset.y + dragAmount.y) }
                         }
                         .fillMaxWidth()
-                        .align(Alignment.Center) // Поднимем подсказку чуть выше
+                        .align(Alignment.Center)
                         .padding(16.dp)
                         .background(Color.White.copy(alpha = 0.9f), RoundedCornerShape(10))
                         .border(2.dp, Color.Red, RoundedCornerShape(10))
@@ -333,19 +341,15 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
                         // Кнопка закрытия комментария
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.End // Располагаем крестик справа
+                            horizontalArrangement = Arrangement.End
                         ) {
                             IconButton(
                                 onClick = {
-                                    viewModel.hideCommentForQuestion(viewModel.currentQuestionIndex) // Скрываем комментарий только для этого вопроса
+                                    viewModel.hideCommentForQuestion(viewModel.currentQuestionIndex) // Скрыть комментарий
                                 },
                                 modifier = Modifier.size(24.dp)
                             ) {
-                                Icon(
-                                    imageVector = Icons.Filled.Close,
-                                    contentDescription = "Close",
-                                    tint = Color.Red
-                                )
+                                Icon(imageVector = Icons.Filled.Close, contentDescription = "Close", tint = Color.Red)
                             }
                         }
 
@@ -360,17 +364,16 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                                Text(
-                                    text = explanationText,
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Normal
-                                )
+                                Text(text = explanationText, fontSize = 16.sp, fontWeight = FontWeight.Normal)
                             }
                         }
                     }
                 }
             }
         }
+
+
+
 
 
 

@@ -35,15 +35,28 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
     // Состояние комментариев для каждого вопроса
     var questionCommentsState = mutableStateMapOf<Int, Boolean>()
 
+    // Состояние для отображения комментария
+    var isCommentVisible = mutableStateOf(true) // Новый флаг для видимости комментария
+
+    // Новый метод для сброса состояний комментариев
+    fun resetCommentStates() {
+        questionCommentsState.clear() // Очистить все состояния комментариев
+        isCommentVisible.value = true  // Сбросить видимость комментариев, если тест начинается заново
+    }
+
     // Метод для скрытия комментария для конкретного вопроса
     fun hideCommentForQuestion(questionIndex: Int) {
         questionCommentsState[questionIndex] = false
+        isCommentVisible.value = false // Скрыть комментарий
     }
+
 
     // Метод для получения состояния комментария
     fun getCommentStateForQuestion(questionIndex: Int): Boolean {
         return questionCommentsState[questionIndex] ?: true // по умолчанию показываем комментарий
+
     }
+
 
 
     // Список вопросов

@@ -74,8 +74,15 @@ fun PauseDialog(
                     }
                     TextButton(
                         onClick = {
+
                             navController.navigate("main_screen") // Переход на главный экран
                             viewModel.resetTimerToInitial()
+                            // Сбрасываем комментарии при завершении теста
+                            viewModel.resetCommentStates()
+
+                            // Обнуляем showExplanation для всех вопросов
+                            viewModel.isCommentVisible.value = false // Отключаем отображение комментариев
+
                         },
                         modifier = Modifier.fillMaxWidth() // Кнопка на всю ширину
                     ) {
