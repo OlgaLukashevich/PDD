@@ -30,6 +30,22 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
     private val _ticketProgress = mutableStateMapOf<String, Float>()
     val ticketProgress: Map<String, Float> get() = _ticketProgress
 
+    // Новый список для хранения индексов неправильных вопросов
+    var incorrectQuestions = mutableStateListOf<Int>()
+    // Состояние комментариев для каждого вопроса
+    var questionCommentsState = mutableStateMapOf<Int, Boolean>()
+
+    // Метод для скрытия комментария для конкретного вопроса
+    fun hideCommentForQuestion(questionIndex: Int) {
+        questionCommentsState[questionIndex] = false
+    }
+
+    // Метод для получения состояния комментария
+    fun getCommentStateForQuestion(questionIndex: Int): Boolean {
+        return questionCommentsState[questionIndex] ?: true // по умолчанию показываем комментарий
+    }
+
+
     // Список вопросов
     var questionList: List<Question> = emptyList()
 
@@ -109,6 +125,14 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
             isAnswerCorrect = isCorrect,
             isAnswerLocked = true
         )
+
+
+        // Если ответ неправильный, сохраняем индекс вопроса в список
+        if (!isCorrect) {
+            if (!incorrectQuestions.contains(currentQuestionIndex)) {
+                incorrectQuestions.add(currentQuestionIndex)
+            }
+        }
 
         // ✅ Обновляем количество правильных ответов
         correctAnswersCount = questionStates.values.count { it.isAnswerCorrect }

@@ -6,7 +6,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -25,12 +27,15 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -42,7 +47,7 @@ import coil.request.ImageRequest
 import com.example.pdd0.parser.parseJson
 import com.example.pdd0.utils.QuestionNavigationPanel
 import com.example.pdd0.utils.AnswerButton
-
+import kotlin.math.roundToInt
 
 
 class QuestionScreenActivity : ComponentActivity() {
@@ -79,14 +84,14 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
     val correctAnswersCount = viewModel.correctAnswersCount
 
 
+
+
     if (viewModel.isTestFinished) {
         LaunchedEffect(Unit) {
             navController.navigate("result_screen/$correctAnswersCount")
         }
         return
     }
-
-
 
 
     // При изменении индекса загружаем состояние ВьюМодели
@@ -116,7 +121,9 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
     }
 
     // Статус ответа
-    var showFeedback by remember { mutableStateOf(false) } // Показывать подсказку и тему
+    var showExplanation by remember { mutableStateOf(false) } // Показывать пояснение
+    var explanationText by remember { mutableStateOf("") }
+
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -218,7 +225,11 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
                         onClick = {
                             if (!questionState.isAnswerLocked) {
                                 viewModel.saveAnswer(answer.answer_text, answer.is_correct)
-                             //   showFeedback = true // Показываем подсказки и тему
+
+                                // Если ответ неправильный, показываем подсказку
+                                if (!answer.is_correct) {
+                                    explanationText = currentQuestion.answer_tip
+                                }
                             }
                         },
                         isAnswerCorrect = isCorrect
@@ -245,7 +256,10 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
                     },
                     enabled = viewModel.currentQuestionIndex > 0,
                     modifier = Modifier
-                        .background(Color.Gray.copy(alpha = 0.4f),  shape = RoundedCornerShape(10)) // Полупрозрачная обводка
+                        .background(
+                            Color.Gray.copy(alpha = 0.4f),
+                            shape = RoundedCornerShape(10)
+                        ) // Полупрозрачная обводка
                         .padding(4.dp) // Паддинг вокруг иконки
                 ) {
                     Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Previous")
@@ -257,7 +271,7 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
                         navController.navigate("result_screen/${viewModel.correctAnswersCount}")
                     },
                     modifier = Modifier
-                        .background(Color.Gray.copy(alpha = 0.4f),  shape = RoundedCornerShape(10))
+                        .background(Color.Gray.copy(alpha = 0.4f), shape = RoundedCornerShape(10))
                         .padding(4.dp)
                 ) {
                     Icon(imageVector = Icons.Filled.Check, contentDescription = "Finish Test")
@@ -270,7 +284,8 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
                         viewModel.moveToNextQuestion()
 
                         // Определение маршрута на основе текущего состояния
-                        val nextScreenRoute = if (screenRoute == "exam_screen") "exam_screen" else "question_screen"
+                        val nextScreenRoute =
+                            if (screenRoute == "exam_screen") "exam_screen" else "question_screen"
 
                         // Переход с передачей параметров в соответствии с NavGraph
                         navController.navigate("question_screen/${viewModel.currentQuestionIndex}/$nextScreenRoute") {
@@ -288,32 +303,77 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
             }
         }
 
+        var offset by remember { mutableStateOf(Offset(0f, 0f)) }
+        var showExplanation by remember { mutableStateOf(true) } // Состояние для отображения комментария
 
-        // Показываем комментарий после ответа
-        if (showFeedback) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp)
-            ) {
-                // Комментарий по ответу
-                Text(
-                    text = "Комментарий: ${currentQuestion.answer_tip}",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Normal
-                )
 
-                Spacer(modifier = Modifier.height(8.dp))
+        // Показываем комментарий только если текущий вопрос неправильный
+        if (viewModel.incorrectQuestions.contains(viewModel.currentQuestionIndex)) {
+            // Получаем состояние комментария для конкретного вопроса
+            val showExplanation = viewModel.getCommentStateForQuestion(viewModel.currentQuestionIndex)
 
-                // Тема вопроса
-                Text(
-                    text = "Тема: ${currentQuestion.topic.joinToString(", ")}",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Normal
-                )
+            if (showExplanation) {
+                Box(
+                    modifier = Modifier
+                        .offset { IntOffset(offset.x.roundToInt(), offset.y.roundToInt()) } // Используем offset для перемещения
+                        .pointerInput(Unit) {
+                            detectDragGestures { _, dragAmount ->
+                                // Обновляем позицию подсказки при перетаскивании
+                                offset = Offset(offset.x + dragAmount.x, offset.y + dragAmount.y)
+                            }
+                        }
+                        .fillMaxWidth()
+                        .align(Alignment.Center) // Поднимем подсказку чуть выше
+                        .padding(16.dp)
+                        .background(Color.White.copy(alpha = 0.9f), RoundedCornerShape(10))
+                        .border(2.dp, Color.Red, RoundedCornerShape(10))
+                        .padding(16.dp)
+                ) {
+                    Column {
+                        // Кнопка закрытия комментария
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.End // Располагаем крестик справа
+                        ) {
+                            IconButton(
+                                onClick = {
+                                    viewModel.hideCommentForQuestion(viewModel.currentQuestionIndex) // Скрываем комментарий только для этого вопроса
+                                },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Close,
+                                    contentDescription = "Close",
+                                    tint = Color.Red
+                                )
+                            }
+                        }
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Warning,
+                                contentDescription = "Incorrect answer",
+                                tint = Color.Red,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                                Text(
+                                    text = explanationText,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Normal
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
-    }
+
+
+
 
         // Диалоговое окно для увеличенной картинки
         if (isImageFullScreen) {
@@ -373,5 +433,6 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
         }
 
     }
+}
 
 

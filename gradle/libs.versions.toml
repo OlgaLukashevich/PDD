@@ -11,6 +11,7 @@ composeBom = "2024.04.01"
 compose-material-icons-extended = "1.0.1"  # или актуальная версия
 navigation-compose = "2.4.0"
 runtimeLivedata = "1.7.8"
+storage = "1.5.0"
 
 [libraries]
 androidx_datastore_preferences = "androidx.datastore:datastore-preferences:1.0.0"
@@ -33,6 +34,7 @@ androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-man
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-runtime-livedata = { group = "androidx.compose.runtime", name = "runtime-livedata", version.ref = "runtimeLivedata" }
+androidx-storage = { group = "androidx.test.services", name = "storage", version.ref = "storage" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
