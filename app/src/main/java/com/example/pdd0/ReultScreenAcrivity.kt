@@ -1,6 +1,7 @@
 package com.example.pdd0
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -40,7 +41,6 @@ fun ResultScreen(correctAnswersCount: Int, totalQuestions: Int, navController: N
     val currentTicketNumber = viewModel.getCurrentTicketNumber(questionList) // ✅ Определяем номер билета
 
     val favoriteTickets by viewModel.favoriteTickets.collectAsState() // ✅ Следим за избранными билетами
-    val isFavorite = favoriteTickets.contains(currentTicketNumber) // ✅ Проверяем, в избранном ли билет
 
 
     // Определяем сообщение в зависимости от количества правильных ответов
@@ -52,6 +52,7 @@ fun ResultScreen(correctAnswersCount: Int, totalQuestions: Int, navController: N
 
     Box(
         modifier = Modifier.fillMaxSize()
+
     ) {
         // Фоновое изображение
         Image(
@@ -59,6 +60,13 @@ fun ResultScreen(correctAnswersCount: Int, totalQuestions: Int, navController: N
             contentDescription = null,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop // Масштабирование изображения
+        )
+
+        // Затемняем фон
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.3f)) // Добавляем полупрозрачный черный слой для затемнения
         )
 
         Column(
@@ -84,11 +92,10 @@ fun ResultScreen(correctAnswersCount: Int, totalQuestions: Int, navController: N
                 text = "Ваш результат: $resultText",
                 fontSize = 36.sp,
                 fontWeight = FontWeight.Bold,
-                color = if (correctAnswersCount == 10) Color.Green else Color.Red, //== totalQuestions
+                color = if (correctAnswersCount >= 9) Color.Green else Color(0xFFFA6224), //== totalQuestions
                 style = TextStyle(
                     letterSpacing = 1.sp,
                     textAlign = TextAlign.Center,
-                    background = Color(0xFF0D6B5E) // Легкий белый фон для текста
                 )
             )
             Spacer(modifier = Modifier.height(6.dp))
@@ -100,7 +107,6 @@ fun ResultScreen(correctAnswersCount: Int, totalQuestions: Int, navController: N
                 style = TextStyle(
                     letterSpacing = 1.5.sp,
                     textAlign = TextAlign.Center,
-                    background = Color(0x88000000) // Полупрозрачный черный фон для контраста
                 )
             )
 

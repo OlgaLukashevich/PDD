@@ -27,8 +27,9 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
     //  отдельный счетчик ошибок для экзамена
     var examWrongAnswersCount by mutableStateOf(0)
         private set
-    private val _ticketProgress = mutableStateMapOf<String, Float>()
-    val ticketProgress: Map<String, Float> get() = _ticketProgress
+
+    var isTicketFavorite by mutableStateOf(false)
+
 
     // Новый список для хранения индексов неправильных вопросов
     var incorrectQuestions = mutableStateListOf<Int>()
@@ -37,10 +38,7 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
     val explanationTexts = mutableStateMapOf<Int, String>() // <--- новое хранилище
 
 
-    // Состояние для отображения комментария
-   // var isCommentVisible = mutableStateOf(true) // Новый флаг для видимости комментария
-
-    // Новый метод для сброса состояний комментариев
+     // Новый метод для сброса состояний комментариев
     fun resetCommentStates() {
         questionCommentsState.clear() // Очистить все состояния комментариев
       //  isCommentVisible.value = true  // Сбросить видимость комментариев, если тест начинается заново
@@ -56,10 +54,7 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
     // Метод для получения состояния комментария
     fun getCommentStateForQuestion(questionIndex: Int): Boolean {
         return questionCommentsState[questionIndex] ?: true // по умолчанию показываем комментарий
-
     }
-
-
 
     // Список вопросов
     var questionList: List<Question> = emptyList()
@@ -123,9 +118,6 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
     }
 
 
-   // var showFavoriteMessage by mutableStateOf(false)
-    var isTicketFavorite by mutableStateOf(false)
-
     fun getCurrentQuestionState(): QuestionState {
         return questionStates[currentQuestionIndex] ?: QuestionState(null, false, false)
     }
@@ -151,17 +143,11 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
                 incorrectQuestions.add(currentQuestionIndex)
             }
         }
-
-
-
         // ✅ Обновляем количество правильных ответов
         correctAnswersCount = questionStates.values.count { it.isAnswerCorrect }
         checkTestCompletion() // 🔥 Проверяем, завершён ли тест после ответа
 
     }
-
-
-
 
     fun getExplanationForQuestion(index: Int): String {
         return explanationTexts[index] ?: ""
@@ -234,7 +220,6 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
             isTestFinished = true
         }
     }
-
 
 
     // Используем FavoriteTicketsManager для управления избранными билетами

@@ -5,7 +5,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -90,8 +89,6 @@ class MainScreenActivity : ComponentActivity() {
 
 @Composable
 fun MainScreen(navController: NavController, questionViewModel: QuestionViewModel, questionList: List<Question>) {
-    // var filteredTickets by remember { mutableStateOf<List<String>>(questionList.map { it.ticket_number }) } // ✅ Теперь изначально содержит все билеты
-
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -115,7 +112,7 @@ fun MainScreen(navController: NavController, questionViewModel: QuestionViewMode
             Box(
                 modifier = Modifier
                     .fillMaxWidth() // Полоска на всю ширину экрана
-                    .background(Color(0xFF34bfff).copy(alpha = 0.8f), RoundedCornerShape(8.dp)) // Закрашенная рамка
+                    .background(Color(0xFF5BCECE).copy(alpha = 0.8f), RoundedCornerShape(8.dp)) // Закрашенная рамка
                     .padding(16.dp)
             ) {
                 Column(
@@ -133,7 +130,7 @@ fun MainScreen(navController: NavController, questionViewModel: QuestionViewMode
                     Text(
                         text = "изучаем",
                         fontSize = 18.sp,
-                        color = Color.Gray // Серый цвет текста
+                        color = Color.White
                     )
                 }
             }
