@@ -110,10 +110,19 @@ fun AllQuestionsScreen(navController: NavController, viewModel: QuestionViewMode
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = { navController.popBackStack("main_screen", inclusive = false) }) {
-                Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Back")
-            }
-            Text(text = "Билеты", fontSize = 24.sp, fontWeight = FontWeight.Bold)
+//            IconButton(onClick = { navController.popBackStack("main_screen", inclusive = false) }) {
+//                Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Back")
+//            }
+                IconButton(onClick = {
+                    navController.navigate("main_screen") {
+                        popUpTo("main_screen") { inclusive = true } // Удаляем все экраны до "main_screen", включая его
+                    }
+                }) {
+                    Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Back")
+                }
+
+
+                Text(text = "Билеты", fontSize = 24.sp, fontWeight = FontWeight.Bold)
         }
 
         Spacer(modifier = Modifier.height(16.dp))

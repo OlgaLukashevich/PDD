@@ -34,20 +34,22 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
     var incorrectQuestions = mutableStateListOf<Int>()
     // Состояние комментариев для каждого вопроса
     var questionCommentsState = mutableStateMapOf<Int, Boolean>()
+    val explanationTexts = mutableStateMapOf<Int, String>() // <--- новое хранилище
+
 
     // Состояние для отображения комментария
-    var isCommentVisible = mutableStateOf(true) // Новый флаг для видимости комментария
+   // var isCommentVisible = mutableStateOf(true) // Новый флаг для видимости комментария
 
     // Новый метод для сброса состояний комментариев
     fun resetCommentStates() {
         questionCommentsState.clear() // Очистить все состояния комментариев
-        isCommentVisible.value = true  // Сбросить видимость комментариев, если тест начинается заново
+      //  isCommentVisible.value = true  // Сбросить видимость комментариев, если тест начинается заново
     }
 
     // Метод для скрытия комментария для конкретного вопроса
     fun hideCommentForQuestion(questionIndex: Int) {
         questionCommentsState[questionIndex] = false
-        isCommentVisible.value = false // Скрыть комментарий
+      //  isCommentVisible.value = false // Скрыть комментарий
     }
 
 
@@ -129,9 +131,7 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
     }
 
 
-    fun saveAnswer(answerText: String, isCorrect: Boolean) {
-        Log.d("TicketProgress", "currentQuestionIndex: $currentQuestionIndex")
-
+    fun saveAnswer(answerText: String, isCorrect: Boolean, explanationText: String) {
         val currentState = questionStates[currentQuestionIndex] ?: QuestionState(null, false, false)
         questionStates[currentQuestionIndex] = currentState.copy(
             selectedAnswer = answerText,
@@ -139,22 +139,33 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
             isAnswerLocked = true
         )
 
-
-        // Если ответ неправильный, сохраняем индекс вопроса в список
         if (!isCorrect) {
+            // 🔥 Добавляем или обновляем explanationText
+            explanationTexts[currentQuestionIndex] = explanationText
+
+            // 🔥 Обновляем отображение комментария каждый раз при ошибке
+            questionCommentsState[currentQuestionIndex] = true
+
+            // Добавляем в список неправильных вопросов, если ещё не был
             if (!incorrectQuestions.contains(currentQuestionIndex)) {
                 incorrectQuestions.add(currentQuestionIndex)
             }
         }
 
+
+
         // ✅ Обновляем количество правильных ответов
         correctAnswersCount = questionStates.values.count { it.isAnswerCorrect }
-
-
-
         checkTestCompletion() // 🔥 Проверяем, завершён ли тест после ответа
+
     }
 
+
+
+
+    fun getExplanationForQuestion(index: Int): String {
+        return explanationTexts[index] ?: ""
+    }
 
 
 
@@ -212,11 +223,18 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
         correctAnswersCount = 0 // ✅ Сбрасываем количество правильных ответов
         isTestFinished = false // ✅ Сбрасываем флаг завершения теста
         currentQuestionIndex = currentTicketStartIndex // ✅ Перенаправляем на первый вопрос текущего билета
+
+        // ✅ Очищаем комментарии
+        questionCommentsState.clear()
+        explanationTexts.clear()
     }
 
 
     fun loadRandomTicket() {
         questionStates.clear()
+        questionCommentsState.clear() // ✅ очищаем комментарии
+        explanationTexts.clear() // ✅ очищаем текст комментариев
+
         val randomTicket = (0 until 40).random() * 10 // ✅ Выбираем случайный билет (0-39) * 10
         currentTicketStartIndex = randomTicket // ✅ Запоминаем первый вопрос билета
         currentQuestionIndex = randomTicket

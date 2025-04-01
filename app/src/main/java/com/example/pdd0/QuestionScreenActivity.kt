@@ -91,7 +91,7 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
         viewModel.resetCommentStates()
 
         // Обнуляем showExplanation для всех вопросов
-        viewModel.isCommentVisible.value = false // Отключаем отображение комментариев
+      //  viewModel.isCommentVisible.value = false // Отключаем отображение комментариев
 
         LaunchedEffect(Unit) {
             navController.navigate("result_screen/$correctAnswersCount")
@@ -230,11 +230,11 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
                         isSelected = isSelected,
                         onClick = {
                             if (!questionState.isAnswerLocked) {
-                                viewModel.saveAnswer(answer.answer_text, answer.is_correct)
+                                viewModel.saveAnswer(answer.answer_text, answer.is_correct, currentQuestion.answer_tip)
 
                                 // Если ответ неправильный, показываем подсказку
                                 if (!answer.is_correct) {
-                                    viewModel.isCommentVisible.value = true
+                                 //   viewModel.isCommentVisible.value = true
                                     explanationText = currentQuestion.answer_tip
                                 }
                             }
@@ -261,7 +261,7 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
                             viewModel.currentQuestionIndex--
                         }
                     },
-                    enabled = viewModel.currentQuestionIndex > 0,
+                    enabled = viewModel.currentQuestionIndex % 20 != 0,// Блокировка на первом вопросе любого билета
                     modifier = Modifier
                         .background(
                             Color.Gray.copy(alpha = 0.4f),
@@ -278,7 +278,7 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
                         viewModel.resetCommentStates()
 
                         // Обнуляем showExplanation для всех вопросов
-                        viewModel.isCommentVisible.value = false // Отключаем отображение комментариев
+                       // viewModel.isCommentVisible.value = false // Отключаем отображение комментариев
                         // Переход на экран с результатами
                         navController.navigate("result_screen/${viewModel.correctAnswersCount}")
                     },
@@ -316,11 +316,16 @@ fun QuestionScreen(navController: NavController, questionIndex: Int, viewModel: 
         }
 
         var offset by remember { mutableStateOf(Offset(0f, 0f)) }
-        var showExplanation by remember { mutableStateOf(false) } // Показывать пояснение
+        val explanationText = viewModel.getExplanationForQuestion(viewModel.currentQuestionIndex)
 
         // Показываем комментарий только если текущий вопрос неправильный
-        if (viewModel.incorrectQuestions.contains(viewModel.currentQuestionIndex) && viewModel.isCommentVisible.value) {
-           val showExplanation = viewModel.getCommentStateForQuestion(viewModel.currentQuestionIndex)
+        //if (viewModel.incorrectQuestions.contains(viewModel.currentQuestionIndex) && viewModel.isCommentVisible.value) {
+        val showExplanation = viewModel.getCommentStateForQuestion(viewModel.currentQuestionIndex)
+        if (viewModel.incorrectQuestions.contains(viewModel.currentQuestionIndex) && showExplanation
+            && explanationText.isNotBlank()
+        ) {
+            // Показываем Box только если есть текст
+      //  val showExplanation = viewModel.getCommentStateForQuestion(viewModel.currentQuestionIndex)
 
             // Показываем Box только если комментарий активен
             if (showExplanation) {

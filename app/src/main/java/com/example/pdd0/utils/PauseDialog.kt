@@ -27,105 +27,86 @@ import com.example.pdd0.dataClass.Question
 
 @Composable
 fun PauseDialog(
-
-    navController: NavController, // Добавляем NavController
-    viewModel: QuestionViewModel, // ✅ Добавляем ViewModel для управления билетами
+    navController: NavController, // Навигация
+    viewModel: QuestionViewModel, // ViewModel для управления состоянием
     onResume: () -> Unit,
     onGoHome: () -> Unit,
     onAddToFavorites: () -> Unit,
-    questionList: List<Question>, // ✅ Добавили список вопросов
-
+    questionList: List<Question>, // Список вопросов
     currentTicketNumber: String // Номер текущего билета
-
 ) {
-
     val context = LocalContext.current
-    val favoriteTickets by viewModel.favoriteTickets.collectAsState() // ✅ Исправлено!
+    val favoriteTickets by viewModel.favoriteTickets.collectAsState() // Избранные билеты
     val isFavorite = favoriteTickets.contains(currentTicketNumber)
 
-
-
-        AlertDialog(
-            onDismissRequest = {},
-            title = {
-                Text(
-                    text = "Пауза",
-                    style = TextStyle(
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold
-                    ) // Увеличиваем размер и делаем жирным
-                )
-            },
-            text = {
-                Column(
-//                    modifier = Modifier.background(Color(0xFFE0F7FA)) // Сетевой цвет фона: светло-голубой
-                ) {
-                    TextButton(
-                        onClick = onResume,
-                        modifier = Modifier.fillMaxWidth() // Кнопка на всю ширину
-                    ) {
-                        Text(
-                            text = "Продолжить",
-                            style = TextStyle(
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Medium
-                            ) // Увеличиваем размер текста
-                        )
-                    }
-                    TextButton(
-                        onClick = {
-
-                            navController.navigate("main_screen") // Переход на главный экран
-                            viewModel.resetTimerToInitial()
-                            // Сбрасываем комментарии при завершении теста
-                            viewModel.resetCommentStates()
-
-                            // Обнуляем showExplanation для всех вопросов
-                            viewModel.isCommentVisible.value = false // Отключаем отображение комментариев
-
-                        },
-                        modifier = Modifier.fillMaxWidth() // Кнопка на всю ширину
-                    ) {
-                        Text(
-                            text = "На главную",
-                            style = TextStyle(
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Medium
-                            ) // Увеличиваем размер текста
-                        )
-                    }
-                    // Кнопка добавления в избранное
-                    TextButton(
-                        onClick = {
-                            Log.d(
-                                "PauseDialog",
-                                "Добавляю билет в избранное: $currentTicketNumber"
-                            ) // ✅ Логируем
-                            onAddToFavorites()
-                            onResume()
-                        },
-                        modifier = Modifier.fillMaxWidth() // Кнопка на всю ширину
-                    ) {
-                        Text(
-                            text = if (isFavorite) "Удалить из избранного" else "Добавить в избранное",
-                            style = TextStyle(
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Medium
-                            ) // Увеличиваем размер текста
-                        )
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = onResume) {
-                    Text(
-                        text = "Закрыть",
-                        style = TextStyle(
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Medium
-                        ) // Увеличиваем размер текста
-                    )
-                }
-            }
-        )
+    // Кнопка с одинаковым стилем
+    @Composable
+    fun StyledTextButton(text: String, onClick: () -> Unit) {
+        TextButton(
+            onClick = onClick,
+            modifier = Modifier.fillMaxWidth() // Кнопка на всю ширину
+        ) {
+            Text(
+                text = text,
+                style = TextStyle(
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium
+                ) // Увеличиваем размер текста
+            )
+        }
     }
+
+    AlertDialog(
+        onDismissRequest = {}, // Предотвращаем закрытие при клике вне окна
+        title = {
+            Text(
+                text = "Пауза",
+                style = TextStyle(
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold
+                ) // Увеличиваем размер и делаем жирным
+            )
+        },
+        text = {
+            Column {
+                // Кнопка для продолжения
+                StyledTextButton(text = "Продолжить", onClick = onResume)
+
+                // Кнопка для перехода на главный экран
+                StyledTextButton(
+                    text = "На главную",
+                    onClick = {
+                        viewModel.resetTest()
+                        navController.navigate("main_screen") {
+                            popUpTo("main_screen") { inclusive = true } // ✅ Удаляем все предыдущие экраны
+                        }
+                        viewModel.resetTimerToInitial() // Сброс таймера
+                        viewModel.resetCommentStates() // Сброс комментариев
+                      //  viewModel.isCommentVisible.value = false // Отключаем отображение комментариев
+                    }
+                )
+
+                // Кнопка добавления/удаления из избранного
+                StyledTextButton(
+                    text = if (isFavorite) "Удалить из избранного" else "Добавить в избранное",
+                    onClick = {
+                        Log.d("PauseDialog", "Добавляю билет в избранное: $currentTicketNumber")
+                        onAddToFavorites()
+                        onResume() // Возвращаемся к текущему вопросу после добавления в избранное
+                    }
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onResume) {
+                Text(
+                    text = "Закрыть",
+                    style = TextStyle(
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium
+                    ) // Увеличиваем размер текста
+                )
+            }
+        }
+    )
+}

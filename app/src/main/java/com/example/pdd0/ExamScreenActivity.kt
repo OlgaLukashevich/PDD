@@ -187,7 +187,7 @@ fun ExamScreen(navController: NavController, questionIndex: Int, viewModel: Ques
                         isSelected = isSelected,
                         onClick = {
                             if (!questionState.isAnswerLocked) {
-                                viewModel.saveAnswer(answer.answer_text, answer.is_correct)
+                                viewModel.saveAnswer(answer.answer_text, answer.is_correct, currentQuestion.answer_tip)
 
                                 // ✅ Отдельный метод для учета ошибок в экзамене
                                 if (!answer.is_correct) {
@@ -219,7 +219,7 @@ fun ExamScreen(navController: NavController, questionIndex: Int, viewModel: Ques
                             viewModel.currentQuestionIndex--
                         }
                     },
-                    enabled = viewModel.currentQuestionIndex > 0,
+                    enabled = viewModel.currentQuestionIndex % 20 != 0,// Блокировка на первом вопросе любого билета
                     modifier = Modifier
                         .background(
                             Color.Gray.copy(alpha = 0.4f),
