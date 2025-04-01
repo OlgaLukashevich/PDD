@@ -175,21 +175,6 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
         return currentQuestion?.ticket_number ?: "Неизвестный билет - $currentQuestionIndex" // Логируем индекс вопроса
     }
 
-
-
-
-    fun getTestProgress(): Float {
-        val totalQuestions = questionStates.size
-        return if (totalQuestions > 0) {
-            correctAnswersCount.toFloat() / totalQuestions
-        } else {
-            0f
-        }
-    }
-
-
-
-
     fun loadQuestionState() {
         // Состояние уже в `questionStates`, поэтому ничего не делаем
     }
@@ -200,18 +185,6 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
             questionStates[currentQuestionIndex] = QuestionState(null, false, false)
         }
     }
-
-    // Находим первый неотвеченный вопрос
-    fun findFirstUnanswered(): Int? {
-        return (0 until 10).firstOrNull { questionStates[it]?.selectedAnswer == null }
-    }
-
-
-
-    var lastTicketStartIndex by mutableStateOf(0) // ✅ Запоминаем номер последнего билета
-
-
-
 
     // 🔥 Новый метод для сброса теста
     fun resetTest() {
@@ -264,7 +237,6 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
 
 
 
-
     // Используем FavoriteTicketsManager для управления избранными билетами
     private val _favoriteTickets = MutableStateFlow<Set<String>>(emptySet())
     val favoriteTickets: StateFlow<Set<String>> get() = _favoriteTickets
@@ -299,10 +271,22 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
     }
 
 
+    // Добавление билета в избранное
+    fun addFavoriteTicket(ticketNumber: String) {
+        _favoriteTickets.value = _favoriteTickets.value + ticketNumber
+    }
+
+    // Удаление билета из избранного
+    fun removeFavoriteTicket(ticketNumber: String) {
+        _favoriteTickets.value = _favoriteTickets.value - ticketNumber  // Удаляем из Set
+    }
+
+
     // ✅ Функция для увеличения количества ошибок в режиме экзамена
     fun incrementExamWrongAnswers() {
         examWrongAnswersCount++
     }
+
 
 
 

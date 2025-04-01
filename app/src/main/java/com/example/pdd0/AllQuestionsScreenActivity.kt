@@ -83,9 +83,10 @@ fun AllQuestionsScreen(navController: NavController, viewModel: QuestionViewMode
 
     // Сортируем билеты по номеру (преобразуем их в числа)
     filteredTickets = filteredTickets
-        .distinct()
-        .sortedBy { it.toIntOrNull() ?: Int.MAX_VALUE }  // Сортируем по числовому значению билета
-
+        .distinct()  // Убираем дубли
+        .sortedBy {
+            it.replace(Regex("[^0-9]"), "").toIntOrNull() ?: Int.MAX_VALUE
+        }  // Сортировка по числовому значению, извлеченному из строки
 
 
 

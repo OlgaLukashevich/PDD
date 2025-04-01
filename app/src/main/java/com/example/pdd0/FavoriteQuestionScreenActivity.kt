@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -35,11 +36,7 @@ fun FavoriteQuestionScreen(navController: NavController, viewModel: QuestionView
         questionList = parseJson(context)
     }
 
-    // ✅ Логируем данные для отладки
-    Log.d("FavoriteScreen", "Избранные билеты (ticket_number): $favoriteTickets")
-    Log.d("FavoriteScreen", "Всего вопросов: ${questionList.size}")
-
-    // ✅ Улучшенная фильтрация избранных билетов
+       // ✅ Улучшенная фильтрация избранных билетов
     val favoriteQuestionList = questionList.filter { question ->
         val cleanTicketNumber = question.ticket_number.replace("Билет ", "").trim()
 
@@ -49,13 +46,14 @@ fun FavoriteQuestionScreen(navController: NavController, viewModel: QuestionView
         }
     }
 
-    // ✅ Проверяем, сколько вопросов осталось после фильтрации
-    Log.d("FavoriteScreen", "После фильтрации осталось вопросов: ${favoriteQuestionList.size}")
-
-    val uniqueFavoriteTickets = favoriteQuestionList
+       val uniqueFavoriteTickets = favoriteQuestionList
         .map { it.ticket_number }
         .distinct()
-        .sortedBy { it.toIntOrNull() ?: Int.MAX_VALUE }
+           .sortedBy {
+               it.replace(Regex("[^0-9]"), "").toIntOrNull() ?: Int.MAX_VALUE
+           }  // Сортировка по числовому значению, извлеченному из строки
+
+
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -110,6 +108,12 @@ fun FavoriteQuestionScreen(navController: NavController, viewModel: QuestionView
                             navController,
                             viewModel
                         )
+                        // Добавляем разделитель после каждого билета
+                        Divider(
+                            modifier = Modifier.padding(vertical = 8.dp),  // Отступы вокруг разделителя
+                            color = Color.Gray, // Цвет разделителя
+                            thickness = 1.dp // Толщина разделителя
+                        )
                     }
                 }
             }
@@ -122,6 +126,16 @@ fun FavoriteQuestionScreen(navController: NavController, viewModel: QuestionView
 fun FavoriteTicketItem(ticketNumber: String, questionList: List<Question>, navController: NavController, viewModel: QuestionViewModel) {
     val context = LocalContext.current
     val allQuestions = parseJson(context) // Загружаем ВСЕ вопросы
+
+
+    val favoriteTickets by viewModel.favoriteTickets.collectAsState()
+
+    // Определяем, является ли текущий билет избранным
+    val isFavorite = favoriteTickets.contains(ticketNumber)
+
+    // Состояние для управления звездой
+    var isStarFilled by remember { mutableStateOf(isFavorite) }
+
 
     Row(
         modifier = Modifier
@@ -145,11 +159,25 @@ fun FavoriteTicketItem(ticketNumber: String, questionList: List<Question>, navCo
             fontSize = 18.sp,
             modifier = Modifier.weight(1f)
         )
-        Icon(
-            imageVector = Icons.Filled.Star,
-            contentDescription = "Favorite",
-            tint = Color.Yellow
-        )
+        IconButton(
+            onClick = {
+                // Переключаем состояние звезды
+                isStarFilled = !isStarFilled
+
+                // Добавляем или удаляем билет из избранного
+                if (isStarFilled) {
+                    viewModel.addFavoriteTicket(ticketNumber) // Добавляем в избранное
+                } else {
+                    viewModel.removeFavoriteTicket(ticketNumber) // Удаляем из избранного
+                }
+            }
+        ) {
+            Icon(
+                imageVector = if (isStarFilled) Icons.Filled.Star else Icons.Filled.StarBorder,
+                contentDescription = if (isStarFilled) "Удалить из избранного" else "Добавить в избранное",
+                tint = if (isStarFilled) Color.Yellow else Color.Gray
+            )
+        }
     }
 }
 
