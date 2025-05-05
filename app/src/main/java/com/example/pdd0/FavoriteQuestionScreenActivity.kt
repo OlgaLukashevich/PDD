@@ -2,10 +2,12 @@ package com.example.pdd0
 
 import android.util.Log
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Star
@@ -14,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
@@ -60,7 +63,7 @@ fun FavoriteQuestionScreen(navController: NavController, viewModel: QuestionView
     ) {
         // Фоновое изображение
         Image(
-            painter = painterResource(id = R.drawable.favorite_background), // Замените на ваш ресурс изображения
+            painter = painterResource(id = R.drawable.main_background), // Замените на ваш ресурс изображения
             contentDescription = null,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop // Масштабирование изображения
@@ -82,7 +85,7 @@ fun FavoriteQuestionScreen(navController: NavController, viewModel: QuestionView
                 }) {
                     Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Back")
                 }
-                Text(text = "Избранные билеты", fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                Text(text = "Избранные билеты", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFF434348))
             }
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -109,12 +112,13 @@ fun FavoriteQuestionScreen(navController: NavController, viewModel: QuestionView
                             viewModel
                         )
                         // Добавляем разделитель после каждого билета
-                        Divider(
+                        HorizontalDivider(
                             modifier = Modifier.padding(vertical = 8.dp),  // Отступы вокруг разделителя
-                            color = Color.Gray, // Цвет разделителя
-                            thickness = 1.dp // Толщина разделителя
+                            thickness = 1.dp, // Толщина разделителя
+                            color = Color.Gray // Цвет разделителя
                         )
                     }
+
                 }
             }
         }
@@ -137,10 +141,12 @@ fun FavoriteTicketItem(ticketNumber: String, questionList: List<Question>, navCo
     var isStarFilled by remember { mutableStateOf(isFavorite) }
 
 
+
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp, horizontal = 16.dp)
+            .padding(vertical = 8.dp, horizontal = 12.dp)
             .clickable {
                 // ✅ Ищем первый вопрос билета в общем списке
                 val firstQuestionIndex = allQuestions.indexOfFirst { it.ticket_number == ticketNumber }
@@ -151,12 +157,17 @@ fun FavoriteTicketItem(ticketNumber: String, questionList: List<Question>, navCo
                 } else {
                     Log.e("FavoriteTicketItem", "Ошибка: Вопросы для билета $ticketNumber не найдены")
                 }
-            },
+            }
+            .clip(RoundedCornerShape(16.dp)) // Закругленные углы
+            .background(Color(0xFFA9D6DE).copy(alpha = 0.5f)) // Добавляем полупрозрачный фон
+            .padding(8.dp), // Отступы внутри
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = ticketNumber,
-            fontSize = 18.sp,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold, // Пожирненный текст
+            color = Color(0xFF434348), // Цвет текста белый для лучшего контраста
             modifier = Modifier.weight(1f)
         )
         IconButton(

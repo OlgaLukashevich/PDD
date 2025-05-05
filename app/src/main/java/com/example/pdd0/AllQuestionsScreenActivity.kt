@@ -5,10 +5,12 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -17,6 +19,7 @@ import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -115,7 +118,7 @@ fun AllQuestionsScreen(navController: NavController, viewModel: QuestionViewMode
                 }
 
 
-                Text(text = "Билеты", fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                Text(text = "Билеты", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFF434348))
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -176,12 +179,17 @@ fun TicketItem(ticketNumber: String, questionList: List<Question>, navController
                 } else {
                     Log.e("TicketItem", "Ошибка: Вопросы для билета $ticketNumber не найдены")
                 }
-            },
+            }
+            .clip(RoundedCornerShape(16.dp)) // Закругленные углы
+            .background(Color(0xFFA9D6DE).copy(alpha = 0.5f)) // Добавляем полупрозрачный фон
+            .padding(8.dp), // Отступы внутри
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = ticketNumber,
             fontSize = 20.sp,
+            fontWeight = FontWeight.Bold, // Пожирненный текст
+            color = Color(0xFF434348), // Цвет текста белый для лучшего контраста
             modifier = Modifier.weight(1f) // Закрашенная рамка
 
         )
@@ -196,7 +204,7 @@ fun TicketItem(ticketNumber: String, questionList: List<Question>, navController
             Icon(
                 imageVector = if (isFavorite) Icons.Filled.Star else Icons.Filled.StarBorder, // ✅ Закрашенная или пустая звезда
                 contentDescription = if (isFavorite) "Удалить из избранного" else "Добавить в избранное",
-                tint = if (isFavorite) Color.Yellow else Color.Gray // ✅ Цвет изменяется
+                tint = if (isFavorite) Color.Yellow else Color(0xFF434348) // ✅ Цвет изменяется
             )
         }
     }

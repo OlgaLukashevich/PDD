@@ -112,7 +112,7 @@ fun MainScreen(navController: NavController, questionViewModel: QuestionViewMode
             Box(
                 modifier = Modifier
                     .fillMaxWidth() // Полоска на всю ширину экрана
-                    .background(Color(0xFF5BCECE).copy(alpha = 0.8f), RoundedCornerShape(8.dp)) // Закрашенная рамка
+                    .background(Color(0xFF9AEEEE).copy(alpha = 0.8f), RoundedCornerShape(8.dp)) // Закрашенная рамка
                     .padding(16.dp)
             ) {
                 Column(
@@ -122,15 +122,17 @@ fun MainScreen(navController: NavController, questionViewModel: QuestionViewMode
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "ПДД",
-                        fontSize = 32.sp,
+                        text = "Правила",
+                        fontSize = 30.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.Black // Серый цвет текста
+                        color = Color(0xFF434348) // Серый цвет текста
                     )
                     Text(
-                        text = "изучаем",
-                        fontSize = 18.sp,
-                        color = Color.White
+                        text = "дорожного движения",
+                        fontSize = 28.sp,
+//                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF434348) // Серый цвет текста
+
                     )
                 }
             }
