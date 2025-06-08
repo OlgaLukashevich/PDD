@@ -70,7 +70,6 @@ class ExamScreenActivity : ComponentActivity() {
     }
 }
 
-
 @Composable
 fun ExamScreen(navController: NavController, questionIndex: Int, viewModel: QuestionViewModel, screenRoute: String) {
     val timeLeft by viewModel.timeLeft.observeAsState(initial = 3 * 60 * 1000L)
@@ -79,18 +78,15 @@ fun ExamScreen(navController: NavController, questionIndex: Int, viewModel: Ques
     // Запуск таймера только при переходе на экран экзамена
     LaunchedEffect(Unit) {
         viewModel.resumeTimer()  // Таймер возобновляется при переходе на экран экзамена
-       // viewModel.resetExamCounters()
     }
 
     // Таймер
     val formattedTime = formatTime(timeLeft)
 
-
-
-
-// Если время вышло или допущено 2 ошибки → завершаем тест
+// Если время вышло или допущено 2 ошибки завершаем тест
     if (viewModel.isTimeUp || viewModel.examWrongAnswersCount >= 2) {
         LaunchedEffect(Unit) {
+
             // Сбрасываем счетчик ошибок и таймер перед переходом на экран с результатами
             viewModel.resetExamCounters()
 
@@ -136,8 +132,8 @@ fun ExamScreen(navController: NavController, questionIndex: Int, viewModel: Ques
             )
 
             Spacer(modifier = Modifier.height(8.dp))
+
             // Панель навигации
-            //QuestionNavigationPanel(navController, viewModel)
             QuestionNavigationPanel(navController, viewModel, screenRoute = "exam_screen")
 
             Spacer(modifier = Modifier.height(8.dp))

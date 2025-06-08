@@ -41,6 +41,7 @@ fun ResultScreen(correctAnswersCount: Int, totalQuestions: Int, navController: N
     val currentTicketNumber = viewModel.getCurrentTicketNumber(questionList) // ✅ Определяем номер билета
 
     val favoriteTickets by viewModel.favoriteTickets.collectAsState() // ✅ Следим за избранными билетами
+    viewModel.saveTicketResult(currentTicketNumber, correctAnswersCount)
 
 
     // Определяем сообщение в зависимости от количества правильных ответов

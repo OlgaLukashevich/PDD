@@ -25,10 +25,9 @@ class TimerService : Service() {
         timer = Timer()
         timer?.schedule(object : TimerTask() {
             override fun run() {
-                // Обновление таймера
-                // Например, уменьшение оставшегося времени
+
             }
-        }, 0, 1000) // Каждую секунду
+        }, 0, 1000) // Обновление таймера rаждую секунду
 
         return START_STICKY
     }
@@ -44,7 +43,7 @@ class TimerService : Service() {
         return NotificationCompat.Builder(this, "timer_channel")
             .setContentTitle("Timer Running")
             .setContentText("The exam timer is running in the background.")
-            .setSmallIcon(R.drawable.ic_pdd)
+            .setSmallIcon(R.drawable.ic_pr)
             .build()
     }
 

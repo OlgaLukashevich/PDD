@@ -15,6 +15,10 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "fa
 class FavoriteTicketsManager(private val context: Context) {
     // Используем stringSetPreferencesKey
     private val favoriteTicketsKey = stringSetPreferencesKey("favorite_tickets")
+
+    private val ticketResultsKey = stringSetPreferencesKey("ticket_results")
+
+
     // Получить список избранных билетов
 
     val favoriteTickets: Flow<Set<String>> = context.dataStore.data
@@ -38,4 +42,35 @@ class FavoriteTicketsManager(private val context: Context) {
             preferences[favoriteTicketsKey] = currentFavorites - ticketNumber
         }
     }
+
+
+    // Сохранить результат по билету
+    suspend fun saveTicketResult(ticketNumber: String, correctAnswers: Int) {
+        context.dataStore.edit { preferences ->
+            val results = preferences[ticketResultsKey]?.toMutableSet() ?: mutableSetOf()
+            results.removeIf { it.startsWith("$ticketNumber:") }
+            results.add("$ticketNumber:$correctAnswers")
+            preferences[ticketResultsKey] = results
+        }
+    }
+
+    suspend fun removeTicketResult(ticketNumber: String) {
+        context.dataStore.edit { preferences ->
+            val results = preferences[ticketResultsKey]?.toMutableSet() ?: return@edit
+            results.removeIf { it.startsWith("$ticketNumber:") }
+            preferences[ticketResultsKey] = results
+        }
+    }
+
+
+    // Получить результаты всех билетов
+    val ticketResults: Flow<Map<String, Int>> = context.dataStore.data.map { preferences ->
+        preferences[ticketResultsKey]
+            ?.associate {
+                val (ticket, score) = it.split(":")
+                ticket to score.toInt()
+            } ?: emptyMap()
+    }
+
+
 }

@@ -132,10 +132,10 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
         )
 
         if (!isCorrect) {
-            // 🔥 Добавляем или обновляем explanationText
+            //  Добавляем или обновляем explanationText
             explanationTexts[currentQuestionIndex] = explanationText
 
-            // 🔥 Обновляем отображение комментария каждый раз при ошибке
+            //  Обновляем отображение комментария каждый раз при ошибке
             questionCommentsState[currentQuestionIndex] = true
 
             // Добавляем в список неправильных вопросов, если ещё не был
@@ -143,9 +143,9 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
                 incorrectQuestions.add(currentQuestionIndex)
             }
         }
-        // ✅ Обновляем количество правильных ответов
+        // Обновляем количество правильных ответов
         correctAnswersCount = questionStates.values.count { it.isAnswerCorrect }
-        checkTestCompletion() // 🔥 Проверяем, завершён ли тест после ответа
+        checkTestCompletion() //  Проверяем, завершён ли тест после ответа
 
     }
 
@@ -273,6 +273,27 @@ class QuestionViewModel(private val favoriteTicketsManager: FavoriteTicketsManag
     }
 
 
+    private val _ticketResults = MutableStateFlow<Map<String, Int>>(emptyMap())
+    val ticketResults: StateFlow<Map<String, Int>> get() = _ticketResults
+
+    init {
+        viewModelScope.launch {
+            favoriteTicketsManager.ticketResults.collect { results ->
+                _ticketResults.value = results
+            }
+        }
+    }
+
+    fun saveTicketResult(ticketNumber: String, correctAnswers: Int) {
+        viewModelScope.launch {
+            favoriteTicketsManager.saveTicketResult(ticketNumber, correctAnswers)
+        }
+    }
+    fun removeTicketResult(ticketNumber: String) {
+        viewModelScope.launch {
+            favoriteTicketsManager.removeTicketResult(ticketNumber)
+        }
+    }
 
 
 
